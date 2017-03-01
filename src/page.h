@@ -2699,7 +2699,7 @@ public:
             std::string body(decoded_raw_data, header_lenght);
             std::stringstream iss;
             iss << body;
-            boost::archive::portable_binary_iarchive ar(iss);
+            boost::archive::binary_iarchive ar(iss);
 
             ar >> outputs;
 
@@ -3271,7 +3271,7 @@ public:
 
                     uint64_t amount = static_cast<uint64_t>
                     (boost::lexical_cast<double>(
-                                    string_parts[1]) * 1e12);
+                                    string_parts[1]) * 1e9);
 
 
                     //cout << "amount_idx: " << amount_idx << endl;

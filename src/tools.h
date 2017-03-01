@@ -8,7 +8,7 @@
 #define PATH_SEPARARTOR '/'
 
 #define XMR_AMOUNT(value) \
-    static_cast<double>(value) / 1e12
+    static_cast<double>(value) / 1e9
 
 #define REMOVE_HASH_BRAKETS(a_hash) \
     a_hash.substr(1, a_hash.size()-2)
@@ -187,7 +187,7 @@ enable_monero_log() {
 inline double
 get_xmr(uint64_t core_amount)
 {
-    return  static_cast<double>(core_amount) / 1e12;
+    return  static_cast<double>(core_amount) / 1e9;
 }
 
 array<size_t, 5>
@@ -251,9 +251,9 @@ parse(const std::string& str, string format="%Y-%m-%d %H:%M:%S");
 
 static
 string
-xmr_amount_to_str(const uint64_t& xmr_amount, string format="{:0.12f}")
+xmr_amount_to_str(const uint64_t& xmr_amount, string format="{:0.9f}")
 {
-    return fmt::format("{:0.12f}", XMR_AMOUNT(xmr_amount));
+    return fmt::format("{:0.9f}", XMR_AMOUNT(xmr_amount));
 }
 
 bool

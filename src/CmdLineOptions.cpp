@@ -37,7 +37,7 @@ namespace xmreg
                  "A path to key file for ssl (https) functionality")
                 ("custom-db-path,c", value<string>(),
                  "path to the custom lmdb database used for searching things")
-                ("deamon-url,d", value<string>()->default_value("http:://127.0.0.1:18081"),
+                ("deamon-url,d", value<string>()->default_value("http:://127.0.0.1:19733"),
                  "monero address string");
 
 
