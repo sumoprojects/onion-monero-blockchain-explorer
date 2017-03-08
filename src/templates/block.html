@@ -1,82 +1,124 @@
 
-<div>
+	<div class="panel panel-explorer panel-tx">
+      <div class="panel-heading">Block {{blk_height}}</div>
+	  <div class="row">
+		<div class="col-xs-12 col-sm-2">Hash: </div>
+		<div class="col-xs-12 col-sm-10">{{blk_hash}}</div>
+	  </div>
+	  {{#have_prev_hash}}
+	  <div class="row">
+		<div class="col-xs-12 col-sm-2">Previous block: </div>
+		<div class="col-xs-12 col-sm-10"><a href="/block/{{prev_hash}}">{{prev_hash}}</a></div>
+	  </div>
+	  {{/have_prev_hash}}
+	  {{#have_next_hash}}
+	  <div class="row">
+		<div class="col-xs-12 col-sm-2">Next block: </div>
+		<div class="col-xs-12 col-sm-10"><a href="/block/{{next_hash}}">{{next_hash}}</a></div>
+	  </div>
+	  {{/have_next_hash}}
+	  <div class="row">
+		<div class="col-xs-12 col-sm-2">Timestamp [UTC] (Epoch): </div>
+		<div class="col-xs-12 col-sm-10">{{blk_timestamp}} ({{blk_timestamp_epoch}})</div>
+	  </div>
+	  <div class="row">
+		<div class="col-xs-12 col-sm-2">Age {{age_format}}: </div>
+		<div class="col-xs-12 col-sm-10">{{blk_age}}</div>
+	  </div>
+	  <div class="row">
+		<div class="col-xs-12 col-sm-2">Δ [h:m:s]: </div>
+		<div class="col-xs-12 col-sm-10">{{delta_time}}</div>
+	  </div>
+	  <div class="row">
+		<div class="col-xs-12 col-sm-2">Major.minor version: </div>
+		<div class="col-xs-12 col-sm-10">{{major_ver}}.{{minor_ver}}</div>
+	  </div>
+	  <div class="row">
+		<div class="col-xs-12 col-sm-2">Block reward: </div>
+		<div class="col-xs-12 col-sm-10">{{blk_reward}}</div>
+	  </div>
+	  <div class="row">
+		<div class="col-xs-12 col-sm-2">Block size [kB]: </div>
+		<div class="col-xs-12 col-sm-10">{{blk_size}}</div>
+	  </div>
+	  <div class="row">
+		<div class="col-xs-12 col-sm-2">Nonce: </div>
+		<div class="col-xs-12 col-sm-10">{{blk_nonce}}</div>
+	  </div>
+	  <div class="row">
+		<div class="col-xs-12 col-sm-2">Total fees: </div>
+		<div class="col-xs-12 col-sm-10">{{sum_fees}}</div>
+	  </div>
+	  <div class="row">
+		<div class="col-xs-12 col-sm-2"># of txs: </div>
+		<div class="col-xs-12 col-sm-10">{{no_txs}}</div>
+	  </div>
+	</div>
 
-    <H4>Block hash (height): {{blk_hash}} ({{blk_height}})</H4>
+	<div class="panel panel-explorer">
+		<div class="panel-heading">
+		  Coinbase transaction
+		</div>
+		<div class="panel-body">
+		  <div class="table-responsive">
+			  <table class="table table-hover table-striped">
+				<thead>
+				  <tr>
+					<th>Hash</th>
+					<th>Outputs</th>
+					<th>Size [kB]</th>
+					<th>Version</th>
+				  </tr>
+				</thead>
+				<tbody>
+						{{#coinbase_txs}}
+						<tr>
+							<td><a href="/tx/{{hash}}">{{hash}}</a>
+							<td>{{sum_outputs}}</td>
+							<td>{{tx_size}}</td>
+							<td>{{version}}</td>
+						</tr>
+						{{/coinbase_txs}}
+				</tbody>
+			  </table>
+		  </div>
+		</div>
+	</div>
 
-
-    {{#have_prev_hash}}
-    <H5>Previous block: <a href="/block/{{prev_hash}}">{{prev_hash}}</a></H5>
-    {{/have_prev_hash}}
-
-    {{#have_next_hash}}
-    <H5>Next block: <a href="/block/{{next_hash}}">{{next_hash}}</a></H5>
-    {{/have_next_hash}}
-
-
-
-    <table class="center">
-        <tr>
-            <td>Timestamp [UCT] (epoch):</td><td>{{blk_timestamp}} ({{blk_timestamp_epoch}})</td>
-            <td>Age {{age_format}}:</td><td>{{blk_age}}</td>
-            <td>Δ [h:m:s]:</td><td>{{delta_time}}</td>
-        </tr>
-        <tr>
-            <td>Major.minor version:</td><td>{{major_ver}}.{{minor_ver}}</td>
-            <td>Block reward:</td><td>{{blk_reward}}</td>
-            <td>Block size [kB]:</td><td>{{blk_size}}</td>
-        </tr>
-        <tr>
-            <td>nonce:</td><td>{{blk_nonce}}</td>
-            <td>Total fees:</td><td>{{sum_fees}}</td>
-            <td>No of txs:</td><td>{{no_txs}}</td>
-        </tr>
-    </table>
-
-    <h3>Miner reward transaction</h3>
-    <table class="center">
-        <tr>
-            <td>hash</td>
-            <td>outputs</td>
-            <td>size [kB]</td>
-            <td>version</td>
-        </tr>
-        {{#coinbase_txs}}
-            <tr>
-                <td><a href="/tx/{{hash}}">{{hash}}</a>
-                <td>{{sum_outputs}}</td>
-                <td>{{tx_size}}</td>
-                <td>{{version}}</td>
-            </tr>
-        {{/coinbase_txs}}
-
-    </table>
-
-
-
-    <h3>Transactions ({{no_txs}})</h3>
-    {{#have_txs}}
-        <table class="center" style="width:80%">
-            <tr>
-                <td>hash</td>
-                <td>outputs</td>
-                <td>fee</td>
-                <td>mixin</td>
-                <td>in/out</td>
-                <td>size [kB]</td>
-                <td>version</td>
-            </tr>
-            {{#blk_txs}}
-                <tr>
-                    <td><a href="/tx/{{hash}}">{{hash}}</a></td>
-                    <td>{{sum_outputs}}</td>
-                    <td>{{tx_fee}}</td>
-                    <td>{{mixin}}</td>
-                    <td>{{no_inputs}}/{{no_outputs}}</td>                    
-                    <td>{{tx_size}}</td>
-                    <td>{{version}}</td>
-                </tr>
-            {{/blk_txs}}
-        </table>
-    {{/have_txs}}
-
-</div>
+	<div class="panel panel-explorer">
+		<div class="panel-heading">
+		  Transactions ({{no_txs}})
+		</div>
+		{{#have_txs}}
+		<div class="panel-body">
+			<div class="table-responsive">
+			  <table class="table table-hover table-striped">
+				<thead>
+				  <tr>
+					<th>Hash</th>
+					<th>Outputs</th>
+					<th>Fee</th>
+					<th>Mixin</th>
+					<th>In/Out</th>
+					<th>Size [kB]</th>
+					<th>Version</th>
+				  </tr>
+				</thead>
+				<tbody>
+						{{#blk_txs}}
+						<tr>
+							<td><a href="/tx/{{hash}}">{{hash}}</a></td>
+							<td>{{{sum_outputs}}}</td>
+							<td>{{tx_fee}}</td>
+							<td>{{mixin}}</td>
+							<td>{{no_inputs}}/{{no_outputs}}</td>                    
+							<td>{{tx_size}}</td>
+							<td>{{version}}</td>
+						</tr>
+						{{/blk_txs}}
+				</tbody>
+			  </table>
+		  </div>
+		</div>
+		{{/have_txs}}
+	</div>

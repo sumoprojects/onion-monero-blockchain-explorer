@@ -25,7 +25,7 @@
 
 #define TMPL_DIR                    "./templates"
 #define TMPL_PARIALS_DIR            TMPL_DIR "/partials"
-#define TMPL_CSS_STYLES             TMPL_DIR "/css/style.css"
+#define TMPL_CSS_STYLES             TMPL_DIR "/css/explorer.css"
 #define TMPL_INDEX                  TMPL_DIR "/index.html"
 #define TMPL_INDEX2                 TMPL_DIR "/index2.html"
 #define TMPL_MEMPOOL                TMPL_DIR "/mempool.html"
@@ -108,6 +108,7 @@ struct tx_details
     crypto::public_key pk;
     uint64_t xmr_inputs;
     uint64_t xmr_outputs;
+	uint64_t num_nonrct_inputs;
     uint64_t fee;
     uint64_t mixin_no;
     uint64_t size;
@@ -165,12 +166,13 @@ struct tx_details
             {"pub_key"           , tx_pk_str},
             {"tx_fee"            , fee_str},
             {"tx_fee_short"      , fee_short_str},
-            {"sum_inputs"        , fmt::format("{:0.6f}", XMR_AMOUNT(xmr_inputs))},
-            {"sum_outputs"       , fmt::format("{:0.6f}", XMR_AMOUNT(xmr_outputs))},
-            {"sum_inputs_short"  , fmt::format("{:0.3f}", XMR_AMOUNT(xmr_inputs))},
-            {"sum_outputs_short" , fmt::format("{:0.3f}", XMR_AMOUNT(xmr_outputs))},
+            {"sum_inputs"        , xmr_amount_to_str(xmr_inputs , "{:0.6f}")},
+            {"sum_outputs"       , xmr_amount_to_str(xmr_outputs, "{:0.6f}")},
+            {"sum_inputs_short"  , xmr_amount_to_str(xmr_inputs , "{:0.3f}", true, true)},
+            {"sum_outputs_short" , xmr_amount_to_str(xmr_outputs, "{:0.3f}", true, true)},
             {"no_inputs"         , input_key_imgs.size()},
             {"no_outputs"        , output_pub_keys.size()},
+			{"no_nonrct_inputs"  , num_nonrct_inputs},
             {"mixin"             , mixin_str},
             {"blk_height"        , blk_height},
             {"version"           , std::to_string(version)},
@@ -252,26 +254,70 @@ class page {
     string lmdb2_path;
 
     string css_styles;
-
+	
     bool testnet;
 
-    bool enable_pusher;
+    uint64_t no_of_mempool_tx_of_frontpage;
+	
+	bool enable_pusher;
+	
+	bool enable_key_image_checker;
+    bool enable_output_key_checker;
 
+    bool enable_autorefresh_option;
+	
+	bool have_custom_lmdb;
 
 public:
 
     page(MicroCore* _mcore, Blockchain* _core_storage,
          string _deamon_url, string _lmdb2_path,
-         bool _testnet, bool _enable_pusher)
+         bool _testnet, bool _enable_pusher,
+		 bool _enable_key_image_checker,
+         bool _enable_output_key_checker,
+         bool _enable_autorefresh_option)
             : mcore {_mcore},
               core_storage {_core_storage},
               rpc {_deamon_url},
               server_timestamp {std::time(nullptr)},
               lmdb2_path {_lmdb2_path},
               testnet {_testnet},
-              enable_pusher {_enable_pusher}
+			  have_custom_lmdb {false},
+              enable_pusher {_enable_pusher},
+			  enable_key_image_checker {_enable_key_image_checker},
+              enable_output_key_checker {_enable_output_key_checker},
+              enable_autorefresh_option {_enable_autorefresh_option}
     {
         css_styles = xmreg::read(TMPL_CSS_STYLES);
+		no_of_mempool_tx_of_frontpage = 25;
+		
+		// just moneky patching now, to check
+        // if custom lmdb database exist, so that
+        // we can search for, e.g., key images,
+        // payments ids. try to open this database.
+        // if it fails, we assume it does not exist.
+        // this is ugly check, but will do for now.
+        // it does not even check if this custom lmdb
+        // is up to date.
+        try
+        {
+            unique_ptr<xmreg::MyLMDB> mylmdb;
+
+            if (bf::is_directory(lmdb2_path))
+            {
+                mylmdb = make_unique<xmreg::MyLMDB>(lmdb2_path);
+
+                // if we got to here, it seems that database exist
+                have_custom_lmdb = true;
+            }
+
+        }
+        catch (const std::exception& e)
+        {
+            cerr << "Custom lmdb databse seem not to exist. Its not big deal. "
+                    "Just some searches wont be possible"
+                 << endl;
+        }
     }
 
 
@@ -306,6 +352,7 @@ public:
 
         // initalise page tempate map with basic info about blockchain
         mstch::map context {
+				{"have_custom_lmdb", have_custom_lmdb},
                 {"refresh"         , refresh_page},
                 {"height"          , std::to_string(height)},
                 {"server_timestamp", xmreg::timestamp_to_str(server_timestamp)},
@@ -315,7 +362,11 @@ public:
                 {"total_page_no"   , std::to_string(height / (no_of_last_blocks))},
                 {"is_page_zero"    , !bool(page_no)},
                 {"next_page"       , std::to_string(page_no + 1)},
-                {"prev_page"       , std::to_string((page_no > 0 ? page_no - 1 : 0))}
+                {"prev_page"       , std::to_string((page_no > 0 ? page_no - 1 : 0))},
+				{"enable_pusher"            , enable_pusher},
+                {"enable_key_image_checker" , enable_key_image_checker},
+                {"enable_output_key_checker", enable_output_key_checker},
+                {"enable_autorefresh_option", enable_autorefresh_option}
         };
 
 
@@ -463,7 +514,7 @@ public:
         string full_page = get_full_page(index_html);
 
         context["css_styles"]   = this->css_styles;
-
+		
         // render the page
         return mstch::render(full_page, context);
     }
@@ -501,8 +552,13 @@ public:
                 {"is_page_zero"    , !bool(page_no)},
                 {"next_page"       , std::to_string(page_no + 1)},
                 {"prev_page"       , std::to_string((page_no > 0 ? page_no - 1 : 0))},
-                {"txs"             , mstch::array()} // will keep tx to show
+				{"enable_pusher"            , enable_pusher},
+                {"enable_key_image_checker" , enable_key_image_checker},
+                {"enable_output_key_checker", enable_output_key_checker},
+                {"enable_autorefresh_option", enable_autorefresh_option}
         };
+		
+		context.emplace("txs", mstch::array()); // will keep tx to show
 
         // get reference to txs mstch map to be field below
         mstch::array& txs = boost::get<mstch::array>(context["txs"]);
@@ -521,6 +577,8 @@ public:
 
         // previous blk timestamp, initalised to lowest possible value
         double prev_blk_timestamp {std::numeric_limits<double>::lowest()};
+		
+		vector<double> blk_sizes;
 
         // iterate over last no_of_last_blocks of blocks
         for (uint64_t i = start_height; i <= end_height; ++i)
@@ -536,6 +594,13 @@ public:
 
             // get block's hash
             crypto::hash blk_hash = core_storage->get_block_id_by_height(i);
+			
+			// get block size in kB
+            double blk_size = static_cast<double>(core_storage->get_db().get_block_size(i))/1024.0;
+
+            string blk_size_str = fmt::format("{:0.2f}", blk_size);
+
+			blk_sizes.push_back(blk_size);
 
             // remove "<" and ">" from the hash string
             string blk_hash_str = REMOVE_HASH_BRAKETS(fmt::format("{:s}", blk_hash));
@@ -583,6 +648,9 @@ public:
                 txd_map.insert({"blk_hash"  , blk_hash_str});
                 txd_map.insert({"time_delta", time_delta_str});
                 txd_map.insert({"age"       , age.first});
+				txd_map.insert({"is_ringct" , (tx.version > 1)});
+                txd_map.insert({"rct_type"  , tx.rct_signatures.type});
+				txd_map.insert({"blk_size" , blk_size_str});
 
                 // do not show block info for other than
                 // last (i.e., first after reverse below)
@@ -592,6 +660,7 @@ public:
                     txd_map["height"]     = string("");
                     txd_map["age"]        = string("");
                     txd_map["time_delta"] = string("");
+					txd_map["blk_size"] = string("");
                 }
 
                 txs.push_back(txd_map);
@@ -603,6 +672,11 @@ public:
             prev_blk_timestamp  = static_cast<double>(blk.timestamp);
 
         } // for (uint64_t i = start_height; i <= end_height; ++i)
+			
+		// calculate median size of the blocks shown
+        double blk_size_median = xmreg::calc_median(blk_sizes.begin(), blk_sizes.end());
+
+		context["blk_size_median"] = fmt::format("{:0.2f}", blk_size_median);
 
         // reverse txs and remove last (i.e., oldest)
         // tx. This is done so that time delats
@@ -629,6 +703,7 @@ public:
         string full_page = get_full_page(index2_html);
 
         add_css_style(context);
+		
 
         // render the page
         return mstch::render(full_page, context);
@@ -640,7 +715,7 @@ public:
      * Render mempool data
      */
     string
-    mempool()
+    mempool(bool add_header_and_footer = false)
     {
         std::vector<tx_info> mempool_txs;
 
@@ -651,12 +726,15 @@ public:
 
         // initalise page tempate map with basic info about mempool
         mstch::map context {
-                {"mempool_size",  std::to_string(mempool_txs.size())},
-                {"mempooltxs" ,   mstch::array()}
+			{"mempool_size",  std::to_string(mempool_txs.size())}
         };
+		
+		context.emplace("mempooltxs" , mstch::array());
 
         // get reference to blocks template map to be field below
-        mstch::array& txs = boost::get<mstch::array>(context["mempooltxs"]);
+		mstch::array& txs = boost::get<mstch::array>(context["mempooltxs"]);
+		
+		uint64_t mempool_size_bytes {0};
 
         // for each transaction in the memory pool
         for (size_t i = 0; i < mempool_txs.size(); ++i)
@@ -686,11 +764,12 @@ public:
                                          delta_time[3], delta_time[4]);
             }
 
-            //cout << _tx_info.tx_json << endl;
+            // cout << _tx_info.tx_json << endl;
 
             // sum xmr in inputs and ouputs in the given tx
             pair<uint64_t, uint64_t> sum_inputs  = xmreg::sum_money_in_inputs(_tx_info.tx_json);
             pair<uint64_t, uint64_t> sum_outputs = xmreg::sum_money_in_outputs(_tx_info.tx_json);
+			uint64_t num_nonrct_inputs = xmreg::count_nonrct_inputs(_tx_info.tx_json);
 
             sum_money_in_outputs(_tx_info.tx_json);
 
@@ -701,9 +780,35 @@ public:
 
             if (!mixin_numbers.empty())
                 mixin_no = mixin_numbers.at(0) - 1;
+			
+			json j_tx;
+
+            string is_ringct_str  {"?"};
+            string rct_type_str   {"?"};
+
+            try
+            {
+                j_tx = json::parse(_tx_info.tx_json);
+
+                if (j_tx["version"].get<size_t>() > 1)
+                {
+                    is_ringct_str = "yes";
+                    rct_type_str  = string("/") + to_string(j_tx["rct_signatures"]["type"].get<uint8_t>());
+                }
+                else
+                {
+                    is_ringct_str = "no";
+                    rct_type_str  = "";
+                }
+            }
+            catch (std::invalid_argument& e)
+            {
+                cerr << " j_tx = json::parse(_tx_info.tx_json);: " << e.what() << endl;
+			}
 
             // set output page template map
             txs.push_back(mstch::map {
+					{"timestamp_no"  , _tx_info.receive_time},
                     {"timestamp"     , xmreg::timestamp_to_str(_tx_info.receive_time)},
                     {"age"           , age_str},
                     {"hash"          , fmt::format("{:s}", _tx_info.id_hash)},
@@ -712,13 +817,58 @@ public:
                     {"xmr_outputs"   , xmreg::xmr_amount_to_str(sum_outputs.first, "{:0.2f}")},
                     {"no_inputs"     , sum_inputs.second},
                     {"no_outputs"    , sum_outputs.second},
+					{"no_nonrct_inputs", num_nonrct_inputs},
+					{"is_ringct"     , is_ringct_str},
+					{"rct_type"      , rct_type_str},
                     {"mixin"         , fmt::format("{:d}", mixin_no)},
                     {"txsize"        , fmt::format("{:0.2f}", static_cast<double>(_tx_info.blob_size)/1024.0)}
             });
+			
+			 mempool_size_bytes += _tx_info.blob_size;
         }
+		
+        context.insert({"mempool_size_kB",
+						fmt::format("{:0.2f}", static_cast<double>(mempool_size_bytes)/1024.0)});
+						
+		// sort txs in mempool based on their age
+        std::sort(txs.begin(), txs.end(), [](mstch::node& m1, mstch::node& m2)
+        {
+            uint64_t t1 = boost::get<uint64_t>(boost::get<mstch::map>(m1)["timestamp_no"]);
+            uint64_t t2 = boost::get<uint64_t>(boost::get<mstch::map>(m2)["timestamp_no"]);
+
+            return t1 > t2;
+		});				
+		
 
         // read index.html
         string mempool_html = xmreg::read(TMPL_MEMPOOL);
+		
+		if (add_header_and_footer)
+        {
+            // this is when mempool is on its own page, /mempool
+            add_css_style(context);
+			
+
+            context["partial_mempool_shown"] = false;
+
+            // add header and footer
+            string full_page = get_full_page(mempool_html);
+
+            // render the page
+            return mstch::render(full_page, context);
+		}
+		
+		context["mempool_fits_on_front_page"]    = (txs.size() <= no_of_mempool_tx_of_frontpage);
+        context["no_of_mempool_tx_of_frontpage"] = no_of_mempool_tx_of_frontpage;
+
+        if (txs.size() > no_of_mempool_tx_of_frontpage)
+        {
+            // dont show more than the specific number mempool txs on
+            // the front page
+            txs.resize(no_of_mempool_tx_of_frontpage);
+        }
+
+		context["partial_mempool_shown"] = true;
 
         // render the page
         return mstch::render(mempool_html, context);
@@ -813,6 +963,7 @@ public:
         // initalise page tempate map with basic info about blockchain
         mstch::map context {
                 {"testnet"              , testnet},
+				{"have_custom_lmdb"     , have_custom_lmdb},
                 {"blk_hash"             , blk_hash_str},
                 {"blk_height"           , _blk_height},
                 {"blk_timestamp"        , blk_timestamp},
@@ -884,16 +1035,17 @@ public:
 
         // add total fees in the block to the context
         context["sum_fees"]
-                = xmreg::xmr_amount_to_str(sum_fees, "{:0.6f}");
+                = xmreg::xmr_amount_to_str(sum_fees, "{:0.6f}", false);
 
         // get xmr in the block reward
         context["blk_reward"]
-                = xmreg::xmr_amount_to_str(txd_coinbase.xmr_outputs - sum_fees, "{:0.6f}");
+                = xmreg::xmr_amount_to_str(txd_coinbase.xmr_outputs - sum_fees, "{:0.6f}", false);
 
         // read block.html
         string block_html = xmreg::read(TMPL_BLOCK);
 
         add_css_style(context);
+		
 
         // add header and footer
         string full_page = get_full_page(block_html);
@@ -990,7 +1142,8 @@ public:
 
         mstch::map context {
                 {"txs"     , mstch::array{}},
-                {"testnet" , this->testnet}
+				{"testnet" , this->testnet},
+				{"have_custom_lmdb"     , have_custom_lmdb}
         };
 
         boost::get<mstch::array>(context["txs"]).push_back(tx_context);
@@ -1003,6 +1156,7 @@ public:
         string tx_html = xmreg::read(TMPL_TX);
 
         add_css_style(context);
+		
 
         // add header and footer
         string full_page = get_full_page(tx_html);
@@ -1154,6 +1308,7 @@ public:
         // initalise page tempate map with basic info about blockchain
         mstch::map context {
                 {"testnet"              , testnet},
+				{"have_custom_lmdb"     , have_custom_lmdb},
                 {"tx_hash"              , tx_hash_str},
                 {"tx_prefix_hash"       , pod_to_hex(txd.prefix_hash)},
                 {"xmr_address"          , xmr_address_str},
@@ -1162,8 +1317,8 @@ public:
                 {"blk_height"           , tx_blk_height_str},
                 {"tx_size"              , fmt::format("{:0.4f}",
                                                       static_cast<double>(txd.size) / 1024.0)},
-                {"tx_fee"               , xmreg::xmr_amount_to_str(txd.fee)},
-                {"blk_timestamp"        , blk_timestamp},
+                {"tx_fee"               , fmt::format("{:0.6f}", XMR_AMOUNT(txd.fee))},
+				{"blk_timestamp"        , blk_timestamp},
                 {"delta_time"           , age.first},
                 {"outputs_no"           , txd.output_pub_keys.size()},
                 {"has_payment_id"       , txd.payment_id  != null_hash},
@@ -1221,29 +1376,30 @@ public:
             // if mine output has RingCT, i.e., tx version is 2
             if (mine_output && tx.version == 2)
             {
-                // initialize with regular amount
-                uint64_t rct_amount = money_transfered[i];
-
-                bool r;
-
-                r = decode_ringct(tx.rct_signatures,
-                                  pub_key,
-                                  prv_view_key,
-                                  i,
-                                  tx.rct_signatures.ecdhInfo[i].mask,
-                                  rct_amount);
-
-                if (!r)
-                {
-                    cerr << "Cant decode ringCT!" << endl;
-                }
-
                 // cointbase txs have amounts in plain sight.
                 // so use amount from ringct, only for non-coinbase txs
                 if (!is_coinbase(tx))
                 {
+
+                    // initialize with regular amount
+                    uint64_t rct_amount = money_transfered[output_idx];
+
+                    bool r;
+
+                    r = decode_ringct(tx.rct_signatures,
+                                      pub_key,
+                                      prv_view_key,
+                                      output_idx,
+                                      tx.rct_signatures.ecdhInfo[output_idx].mask,
+                                      rct_amount);
+
+                    if (!r)
+                    {
+                        cerr << "\nshow_my_outputs: Cant decode ringCT! " << endl;
+                    }
+
                     outp.second         = rct_amount;
-                    money_transfered[i] = rct_amount;
+                    money_transfered[output_idx] = rct_amount;
                 }
 
             }
@@ -1468,6 +1624,7 @@ public:
         string full_page = get_full_page(my_outputs_html);
 
         add_css_style(context);
+		
 
         // render the page
         return mstch::render(full_page, context);
@@ -1481,26 +1638,31 @@ public:
         return show_my_outputs(tx_hash_str, xmr_address_str, tx_prv_key_str, true);
     }
 
-    string
+	
+	string
     show_rawtx()
     {
 
         // initalise page tempate map with basic info about blockchain
         mstch::map context {
-                {"testnet"              , testnet}
+                {"testnet"              , testnet},
+				{"have_custom_lmdb"     , have_custom_lmdb}
         };
 
         // read rawtx.html
         string rawtx_html = xmreg::read(TMPL_MY_RAWTX);
 
         // add header and footer
-        string full_page =  rawtx_html + get_footer();
+        string full_page = get_full_page(rawtx_html);
 
         add_css_style(context);
+		
 
         // render the page
         return mstch::render(full_page, context);
     }
+	
+	
 
     string
     show_checkrawtx(string raw_tx_data, string action)
@@ -1512,6 +1674,8 @@ public:
         //cout << decoded_raw_tx_data << endl;
 
         const size_t magiclen = strlen(UNSIGNED_TX_PREFIX);
+		
+		string data_prefix = xmreg::make_printable(decoded_raw_tx_data.substr(0, magiclen));
 
         bool unsigned_tx_given {false};
 
@@ -1523,10 +1687,13 @@ public:
         // initalize page template context map
         mstch::map context {
                 {"testnet"              , testnet},
+				{"have_custom_lmdb"     , have_custom_lmdb},
                 {"unsigned_tx_given"    , unsigned_tx_given},
                 {"have_raw_tx"          , true},
-                {"txs"                  , mstch::array{}}
+				{"data_prefix"          , data_prefix}
         };
+		
+		context.emplace("txs", mstch::array{});
 
         if (unsigned_tx_given)
         {
@@ -1772,11 +1939,93 @@ public:
             // if raw data is not unsigined tx, then assume it is signed tx
 
             const size_t magiclen = strlen(SIGNED_TX_PREFIX);
+			
+			string data_prefix = xmreg::make_printable(decoded_raw_tx_data.substr(0, magiclen));
 
             if (strncmp(decoded_raw_tx_data.c_str(), SIGNED_TX_PREFIX, magiclen) != 0)
             {
-                cout << "The data is neither unsigned nor signed tx!" << endl;
-                return string( "The data is neither unsigned nor signed tx!");
+                 // ok, so its not signed tx data. but maybe it is raw tx data
+                // used in rpc call "/sendrawtransaction". This is for example
+                // used in mymonero and openmonero projects.
+
+                // to check this, first we need to encode data back to base64.
+                // the reason is that txs submited to "/sendrawtransaction"
+                // are not base64, and we earlier always asume it is base64.
+
+                // string reencoded_raw_tx_data = epee::string_encoding::base64_decode(raw_tx_data);
+
+                //cout << "raw_tx_data: " << raw_tx_data << endl;
+
+                cryptonote::blobdata tx_data_blob;
+
+                if (!epee::string_tools::parse_hexstr_to_binbuff(raw_tx_data, tx_data_blob))
+                {
+                    string msg = fmt::format("The data is neither unsigned, signed tx or raw tx! "
+                                              "Its prefix is: {:s}",
+                                             data_prefix);
+
+                    cout << msg << endl;
+
+                    return string(msg);
+                }
+
+                crypto::hash tx_hash_from_blob;
+                crypto::hash tx_prefix_hash_from_blob;
+                cryptonote::transaction tx_from_blob;
+
+                if (!cryptonote::parse_and_validate_tx_from_blob(tx_data_blob,
+                                                                 tx_from_blob,
+                                                                 tx_hash_from_blob,
+                                                                 tx_prefix_hash_from_blob))
+                {
+                    string msg = fmt::format("failed to validate transaction");
+
+                    cout << msg << endl;
+
+                    return string(msg);
+                }
+
+                //cout << "tx_from_blob.vout.size(): " << tx_from_blob.vout.size() << endl;
+
+                // tx has been correctly deserialized. So
+                // we just dispaly it. We dont have any information about real mixins, etc,
+                // so there is not much more we can do with tx data.
+
+                mstch::map tx_context = construct_tx_context(tx_from_blob);
+
+                if (boost::get<bool>(tx_context["has_error"]))
+                {
+                    return boost::get<string>(tx_context["error_msg"]);
+                }
+
+                // this will be stored in html for for checking outputs
+                // we need this data if we want to use "Decode outputs"
+                // to see which outputs are ours, and decode amounts in ringct txs
+                tx_context["raw_tx_data"]            = raw_tx_data;
+                tx_context["show_more_details_link"] = false;
+
+                context["data_prefix"] = string("none as this is pure raw tx data");
+                context["tx_json"]     = obj_to_json_str(tx_from_blob);
+
+                context.emplace("txs"     , mstch::array{});
+
+                boost::get<mstch::array>(context["txs"]).push_back(tx_context);
+
+                map<string, string> partials {
+                        {"tx_details", xmreg::read(string(TMPL_PARIALS_DIR) + "/tx_details.html")},
+                };
+
+                // read checkrawtx.html
+                string checkrawtx_html = xmreg::read(TMPL_MY_CHECKRAWTX);
+
+                // add header and footer
+                string full_page =  get_full_page(checkrawtx_html);
+
+                add_css_style(context);
+				
+
+                // render the page
+                return mstch::render(full_page, context, partials);
             }
 
             ::tools::wallet2::signed_tx_set signed_txs;
@@ -1846,7 +2095,8 @@ public:
                     real_ammounts.push_back(ptx.construction_data.change_dts.amount);
                 };
 
-                tx_context["outputs_xmr_sum"] = xmreg::xmr_amount_to_str(outputs_xmr_sum);
+                tx_context["outputs_xmr_sum"] = xmreg::xmr_amount_to_str(outputs_xmr_sum, "{:0.9f}", true);
+				tx_context["outputs_xmr_sum_short"]   = xmreg::xmr_amount_to_str(outputs_xmr_sum, "{:0.9f}", true, true);
 
                 tx_context.insert({"dest_infos", destination_addresses});
 
@@ -1936,7 +2186,8 @@ public:
                 tx_context["have_raw_tx"] = true;
 
                 // provide total mount of inputs xmr
-                tx_context["inputs_xmr_sum"] = xmreg::xmr_amount_to_str(inputs_xmr_sum);
+                tx_context["inputs_xmr_sum"] = xmreg::xmr_amount_to_str(inputs_xmr_sum, "{:0.9f}", true);
+				tx_context["inputs_xmr_sum_short"] = xmreg::xmr_amount_to_str(inputs_xmr_sum, "{:0.9f}", true, true);
 
                 // get reference to inputs array created of the tx
                 mstch::array& inputs = boost::get<mstch::array>(tx_context["inputs"]);
@@ -2011,9 +2262,10 @@ public:
         string checkrawtx_html = xmreg::read(TMPL_MY_CHECKRAWTX);
 
         // add header and footer
-        string full_page =  checkrawtx_html + get_footer();
+        string full_page =  get_full_page(checkrawtx_html);
 
         add_css_style(context);
+		
 
         // render the page
         return mstch::render(full_page, context, partials);
@@ -2027,27 +2279,34 @@ public:
         string decoded_raw_tx_data = epee::string_encoding::base64_decode(raw_tx_data);
 
         const size_t magiclen = strlen(SIGNED_TX_PREFIX);
+		
+		string data_prefix = xmreg::make_printable(decoded_raw_tx_data.substr(0, magiclen));
 
         // initalize page template context map
         mstch::map context {
                 {"testnet"              , testnet},
+				{"have_custom_lmdb"     , have_custom_lmdb},
                 {"have_raw_tx"          , true},
                 {"has_error"            , false},
                 {"error_msg"            , string {}},
-                {"txs"                  , mstch::array{}}
+                {"data_prefix"          , data_prefix}
         };
+		
+		context.emplace("txs", mstch::array{});
 
         // read pushrawtx.html
         string pushrawtx_html = xmreg::read(TMPL_MY_PUSHRAWTX);
 
         // add header and footer
-        string full_page =  pushrawtx_html + get_footer();
-
+        string full_page = get_full_page(pushrawtx_html);
+		
         add_css_style(context);
+		
 
         if (strncmp(decoded_raw_tx_data.c_str(), SIGNED_TX_PREFIX, magiclen) != 0)
         {
-            string error_msg = fmt::format("The data does not appear to be signed raw tx!");
+            string error_msg = fmt::format("The data does not appear to be signed raw tx! Data prefix: {:s}",
+																									data_prefix);
 
             context["has_error"] = true;
             context["error_msg"] = error_msg;
@@ -2197,16 +2456,18 @@ public:
     {
         // initalize page template context map
         mstch::map context {
-                {"testnet"              , testnet}
+                {"testnet"            , testnet},
+				{"have_custom_lmdb"   , have_custom_lmdb}
         };
 
         // read rawkeyimgs.html
         string rawkeyimgs_html = xmreg::read(TMPL_MY_RAWKEYIMGS);
 
         // add header and footer
-        string full_page =  rawkeyimgs_html + get_footer();
+        string full_page = get_full_page(rawkeyimgs_html);
 
         add_css_style(context);
+		
 
         // render the page
         return mstch::render(full_page, context);
@@ -2217,16 +2478,18 @@ public:
     {
         // initalize page template context map
         mstch::map context {
-                {"testnet"              , testnet}
+                {"testnet"              , testnet},
+				{"have_custom_lmdb"     , have_custom_lmdb}
         };
 
         // read rawoutputkeys.html
         string rawoutputkeys_html = xmreg::read(TMPL_MY_RAWOUTPUTKEYS);
 
         // add header and footer
-        string full_page =  rawoutputkeys_html + get_footer();
+        string full_page = get_full_page(rawoutputkeys_html);
 
         add_css_style(context);
+		
 
         // render the page
         return mstch::render(full_page, context);
@@ -2246,6 +2509,7 @@ public:
         // initalize page template context map
         mstch::map context{
                 {"testnet"  ,    testnet},
+				{"have_custom_lmdb"     , have_custom_lmdb},
                 {"has_error",    false},
                 {"error_msg",    string{}},
         };
@@ -2254,9 +2518,10 @@ public:
         string checkrawkeyimgs_html = xmreg::read(TMPL_MY_CHECKRAWKEYIMGS);
 
         // add footer
-        string full_page =  checkrawkeyimgs_html + get_footer();
+        string full_page = get_full_page(checkrawkeyimgs_html);
 
         add_css_style(context);
+		
 
         if (viewkey_str.empty())
         {
@@ -2280,6 +2545,10 @@ public:
         }
 
         const size_t magiclen = strlen(KEY_IMAGE_EXPORT_FILE_MAGIC);
+		
+		 string data_prefix = xmreg::make_printable(decoded_raw_data.substr(0, magiclen));
+
+        context["data_prefix"] = data_prefix;
 
         if (!strncmp(decoded_raw_data.c_str(), KEY_IMAGE_EXPORT_FILE_MAGIC, magiclen) == 0)
         {
@@ -2523,33 +2792,35 @@ public:
 
                                 if (mine_output)
                                 {
-                                    // seems we found our output. so now lets decode its amount
-                                    // using ringct
-
-                                    bool r;
-
-                                    r = decode_ringct(output_source_tx.rct_signatures,
-                                                      tx_pub_key,
-                                                      prv_view_key,
-                                                      output_idx_in_tx,
-                                                      output_source_tx.rct_signatures.ecdhInfo[output_idx_in_tx].mask,
-                                                      rct_amount);
-
-                                    if (!r)
+                                    if (output_source_tx.version == 2
+                                        && !is_coinbase(output_source_tx))
                                     {
-                                        string error_msg = fmt::format(
-                                                "Cant decode ringCT for "
-                                                "pub_tx_key: {:s} "
-                                                "using prv_view_key: {:s}",
-                                                tx_pub_key, prv_view_key);
+                                        bool r;
 
-                                        context["has_error"] = true;
-                                        context["error_msg"] = error_msg;
+                                        r = decode_ringct(output_source_tx.rct_signatures,
+                                                          tx_pub_key,
+                                                          prv_view_key,
+                                                          output_idx_in_tx,
+                                                          output_source_tx.rct_signatures.ecdhInfo[output_idx_in_tx].mask,
+                                                          rct_amount);
 
-                                        return mstch::render(full_page, context);
-                                    }
+                                        if (!r)
+                                        {
+                                            string error_msg = fmt::format(
+                                                    "Cant decode ringCT for "
+                                                            "pub_tx_key: {:s} "
+                                                            "using prv_view_key: {:s}",
+                                                    tx_pub_key, prv_view_key);
 
-                                    xmr_amount = rct_amount;
+                                            context["has_error"] = true;
+                                            context["error_msg"] = error_msg;
+
+                                            return mstch::render(full_page, context);
+                                        }
+
+                                        xmr_amount = rct_amount;
+
+                                    } // if (output_source_tx.version == 2 && !is_coinbase(output_source_tx))
 
                                     break;
 
@@ -2585,10 +2856,9 @@ public:
         return mstch::render(full_page, context);
     }
 
-    string
+	string 
     show_checkcheckrawoutput(string raw_data, string viewkey_str)
     {
-
         clean_post_data(raw_data);
 
         // remove white characters
@@ -2599,17 +2869,18 @@ public:
 
         // initalize page template context map
         mstch::map context{
-                {"testnet",   testnet},
-                {"has_error", false},
-                {"error_msg", string{}},
+                {"testnet"         , testnet},
+                {"have_custom_lmdb", have_custom_lmdb},
+                {"has_error"       , false},
+                {"error_msg"       , string{}}
         };
 
 
         // read page template
         string checkoutputkeys_html = xmreg::read(TMPL_MY_CHECKRAWOUTPUTKEYS);
 
-        // add footer
-        string full_page = checkoutputkeys_html + get_footer();
+        // add header and footer
+        string full_page = get_full_page(checkoutputkeys_html);
 
         add_css_style(context);
 
@@ -2635,6 +2906,10 @@ public:
         }
 
         const size_t magiclen = strlen(OUTPUT_EXPORT_FILE_MAGIC);
+
+        string data_prefix = xmreg::make_printable(decoded_raw_data.substr(0, magiclen));
+
+        context["data_prefix"] = data_prefix;
 
         if (!strncmp(decoded_raw_data.c_str(), OUTPUT_EXPORT_FILE_MAGIC, magiclen) == 0)
         {
@@ -2699,7 +2974,7 @@ public:
             std::string body(decoded_raw_data, header_lenght);
             std::stringstream iss;
             iss << body;
-            boost::archive::binary_iarchive ar(iss);
+            boost::archive::portable_binary_iarchive ar(iss);
 
             ar >> outputs;
 
@@ -2729,24 +3004,24 @@ public:
                     txp.vout[td.m_internal_output_index].target);
 
             uint64_t xmr_amount = td.amount();
+			
+			// get tx associated with the given output
+			transaction tx;
+
+			if (!mcore->get_tx(td.m_txid, tx))
+			{
+				string error_msg = fmt::format("Cant get tx of hash: {:s}", td.m_txid);
+
+				context["has_error"] = true;
+				context["error_msg"] = error_msg;
+
+				return mstch::render(full_page, context);
+			}
 
             // if the output is RingCT, i.e., tx version is 2
             // need to decode its amount
-            if (td.m_tx.version == 2)
+            if (td.m_tx.version == 2 && !is_coinbase(tx))
             {
-                // get tx associated with the given output
-                transaction tx;
-
-                if (!mcore->get_tx(td.m_txid, tx))
-                {
-                    string error_msg = fmt::format("Cant get tx of hash: {:s}", td.m_txid);
-
-                    context["has_error"] = true;
-                    context["error_msg"] = error_msg;
-
-                    return mstch::render(full_page, context);
-                }
-
                 public_key tx_pub_key = xmreg::get_tx_pub_key_from_received_outs(tx);
 
                 bool r = decode_ringct(tx.rct_signatures,
@@ -2813,7 +3088,7 @@ public:
             context["total_xmr"] = xmreg::xmr_amount_to_str(total_xmr);
         }
 
-        return mstch::render(full_page, context);;
+        return mstch::render(full_page, context);
     }
 
 
@@ -3340,6 +3615,9 @@ public:
             cerr << "Error opening/accessing custom lmdb database: "
                  << e.what() << endl;
         }
+		catch (...){
+			cerr << "Unknown error in accessing custom lmdb database" << endl;
+		}
 
 
         result_html = show_search_results(search_text, all_possible_tx_hashes);
@@ -3361,6 +3639,7 @@ public:
                 {"public_spendkey"    , REMOVE_HASH_BRAKETS(pub_spendkey_str)},
                 {"is_integrated_addr" , false},
                 {"testnet"            , testnet},
+				{"have_custom_lmdb"   , have_custom_lmdb}
         };
 
         // read address.html
@@ -3370,6 +3649,7 @@ public:
         string full_page = get_full_page(address_html);
 
         add_css_style(context);
+		
 
         // render the page
         return mstch::render(full_page, context);
@@ -3394,12 +3674,14 @@ public:
                 {"encrypted_payment_id" , REMOVE_HASH_BRAKETS(enc_payment_id_str)},
                 {"is_integrated_addr"   , true},
                 {"testnet"              , testnet},
+				{"have_custom_lmdb"     , have_custom_lmdb}
         };
 
         // read address.html
         string address_html = xmreg::read(TMPL_ADDRESS);
 
         add_css_style(context);
+		
 
         // add header and footer
         string full_page = get_full_page(address_html);
@@ -3509,6 +3791,7 @@ public:
         // initalise page tempate map with basic info about blockchain
         mstch::map context {
                 {"testnet"        , testnet},
+				{"have_custom_lmdb"     , have_custom_lmdb},
                 {"search_text"    , search_text},
                 {"no_results"     , true},
                 {"to_many_results", false}
@@ -3619,6 +3902,8 @@ public:
         };
 
         add_css_style(context);
+		
+		
 
         // render the page
         return  mstch::render(full_page, context, partials);
@@ -3720,13 +4005,15 @@ private:
         // initalise page tempate map with basic info about blockchain
         mstch::map context {
                 {"testnet"              , testnet},
+				{"have_custom_lmdb"     , have_custom_lmdb},
                 {"tx_hash"              , tx_hash_str},
                 {"tx_prefix_hash"       , pod_to_hex(txd.prefix_hash)},
                 {"tx_pub_key"           , REMOVE_HASH_BRAKETS(fmt::format("{:s}", txd.pk))},
                 {"blk_height"           , tx_blk_height_str},
+				{"blk_found"            , tx_blk_found},
                 {"tx_size"              , fmt::format("{:0.4f}",
                                                       static_cast<double>(txd.size) / 1024.0)},
-                {"tx_fee"               , xmreg::xmr_amount_to_str(txd.fee)},
+                {"tx_fee"               , fmt::format("{:0.6f}", XMR_AMOUNT(txd.fee))},
                 {"tx_version"           , fmt::format("{:d}", txd.version)},
                 {"blk_timestamp"        , blk_timestamp},
                 {"blk_timestamp_uint"   , blk.timestamp},
@@ -3743,6 +4030,8 @@ private:
                 {"with_ring_signatures" , static_cast<bool>(
                                                   with_ring_signatures)},
                 {"tx_json"              , tx_json},
+				{"is_ringct"            , (tx.version > 1)},
+				{"rct_type" 			, tx.rct_signatures.type},
                 {"has_error"            , false},
                 {"error_msg"            , string("")},
                 {"have_raw_tx"          , false},
@@ -3755,6 +4044,14 @@ private:
         uint64_t input_idx {0};
 
         uint64_t inputs_xmr_sum {0};
+		
+		// ringct inputs can be mixture of known amounts (when old outputs)
+        // are spent, and unknown umounts (makrked in explorer by '?') when
+        // ringct outputs are spent. thus we totalling input amounts
+        // in such case, we need to show sum of known umounts, and
+        // indicate that this is minium sum, as we dont know the unknown
+        // umounts.
+        bool have_any_unknown_amount {false};
 
         vector<vector<uint64_t>> mixin_timestamp_groups;
 
@@ -3805,6 +4102,13 @@ private:
             });
 
             inputs_xmr_sum += in_key.amount;
+			
+			if (in_key.amount == 0)
+            {
+                // if any input has amount equal to zero,
+                // it is really an unkown amount
+                have_any_unknown_amount = true;
+            }
 
             vector<uint64_t> mixin_timestamps;
 
@@ -3916,10 +4220,14 @@ private:
                         max_mix_timestamp
                 );
 
-
-        context["inputs_xmr_sum"]   = xmreg::xmr_amount_to_str(inputs_xmr_sum);
+		context["have_any_unknown_amount"] = have_any_unknown_amount;
+        context["inputs_xmr_sum_not_zero"] = (inputs_xmr_sum > 0);
+        context["inputs_xmr_sum"]   = xmreg::xmr_amount_to_str(inputs_xmr_sum, "{:0.9f}", true);
+		context["inputs_xmr_sum_short"]   = xmreg::xmr_amount_to_str(inputs_xmr_sum, "{:0.9f}", true, true);
         context["server_time"]      = server_time_str;
-        context["inputs"]           = inputs;
+        
+		context.emplace("inputs", inputs);
+		
         context["min_mix_time"]     = xmreg::timestamp_to_str(min_mix_timestamp);
         context["max_mix_time"]     = xmreg::timestamp_to_str(max_mix_timestamp);
         context["timescales"]       = mixins_timescales.first;
@@ -3984,7 +4292,8 @@ private:
             });
         }
 
-        context["outputs_xmr_sum"] = xmreg::xmr_amount_to_str(outputs_xmr_sum);
+        context["outputs_xmr_sum"] = xmreg::xmr_amount_to_str(outputs_xmr_sum, "{:0.9f}", true);
+		context["outputs_xmr_sum_short"]   = xmreg::xmr_amount_to_str(outputs_xmr_sum, "{:0.9f}", true, true);
 
         context["outputs"] = outputs;
 
@@ -4068,6 +4377,7 @@ private:
         // sum xmr in inputs and ouputs in the given tx
         txd.xmr_inputs  = sum_money_in_inputs(tx);
         txd.xmr_outputs = sum_money_in_outputs(tx);
+		txd.num_nonrct_inputs = count_nonrct_inputs(tx);
 
         // get mixin number
         txd.mixin_no    = get_mixin_no(tx);
@@ -4351,7 +4661,7 @@ private:
             return this->css_styles;
         }};
     }
-
+	
 };
 }
 

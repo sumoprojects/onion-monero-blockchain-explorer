@@ -1,32 +1,49 @@
-<h2>
-   Memory pool (size: {{mempool_size}})
-</h2>
-<div class="center">
-    
-      <table class="center">
-            <tr>
-                <td>height</td>
-                <td>age [h:m:s]</td>
-                <td>transaction hash</td>
-                <td>fee</td>
-                <td>outputs</td>
-                <td>in/out</td>
-                <td>mixin</td>
-                <td>size [kB]</td>
-            </tr>
-            {{#mempooltxs}}
-            <tr>
-                <td>N/A</td>
-                <td>{{age}}</td>
-                <td><a href="/tx/{{hash}}">{{hash}}</a></td>
-                <td>{{fee}}</td>
-                <td>{{xmr_outputs}}</td>
-                <td>{{no_inputs}}/{{no_outputs}}</td>
-                <td>{{mixin}}</td>
-                <td>{{txsize}}</td>
-            </tr>
-            {{/mempooltxs}}
-        </table>
+<div class="panel panel-explorer">
+	 <div class="panel-heading">
+	   Memory pool <small>(no of txs: {{mempool_size}}, size: {{mempool_size_kB}} kB)</small>
+	</div>
+	 <div class="panel-body">
+		 <div class="table-responsive">
+            <table class="table table-hover table-striped">
+				<thead>
+					<th><i class="fa fa-clock-o"></i> Age <!--(Δm)--></th>
+					<th><i class="fa fa-paw"></i> TX hash</th>
+					<th><i class="fa fa-tag"></i> Fees</th>
+					<th><i class="fa fa-money"></i> Outputs</th>
+					<th><i class="fa fa-exchange"></i> In/Out</th>
+					<th><i class="fa fa-circle-o"></i> Rct/Type</th>
+					<th><i class="fa fa-sitemap"></i> Mixin</th>
+					<th><i class="fa fa-floppy-o"></i> Size [kB]</th>
+				</thead>
+				<tbody>
+					{{#mempooltxs}}
+					<tr>
+						<td>{{age}}</td>
+						<td><a href="/tx/{{hash}}">{{hash}}</a></td>
+						<td>{{fee}}</td>
+						<td>{{{xmr_outputs}}}</td>
+						<td>{{no_inputs}}/{{no_outputs}}</td>
+						<td>
+							{{#is_ringct}}yes{{rct_type}}{{/is_ringct}}
+							{{^is_ringct}}no{{/is_ringct}}
+						</td>
+						<td>{{mixin}}</td>
+						<td>{{txsize}}</td>
+					</tr>
+					{{/mempooltxs}}
+					{{^mempool_fits_on_front_page}}
+					  {{#partial_mempool_shown}}
+					  <tfoot>
+						<tr>
+						  <td colspan="8"><a href="/mempool">Only {{no_of_mempool_tx_of_frontpage}} txs shown. Click here to see all of them</a></td>
+						<tr>
+					  </tfoot>
+					  {{/partial_mempool_shown}}
 
+					{{/mempool_fits_on_front_page}}
+				</tbody>
+			</table>
+		</div>
 
+	</div>
 </div>

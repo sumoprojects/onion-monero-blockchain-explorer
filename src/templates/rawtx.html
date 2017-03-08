@@ -1,40 +1,20 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <META HTTP-EQUIV="CACHE-CONTROL" CONTENT="NO-CACHE">
-    {{#refresh}}
-    <meta http-equiv="refresh" content="10">
-    {{/refresh}}
-    <title>Onion Monero Blockchain Explorer</title>
-    <!--<link rel="stylesheet" type="text/css" href="/css/style.css">-->
-    <style type="text/css">
-        {{#css_styles}}{{/css_styles}}
-    </style>
+<br/>
+    <h3>Transaction Pusher</h3>
 
-</head>
-<body>
-<div>
-
-    <div class="center">
-        <h1 class="center"><a href="/">Onion Monero Transaction Pusher</a></h1>
-        <h4 style="font-size: 15px; margin: 0px">(no javascript - no cookies - no web analytics trackers - no images - open sourced)</h4>
-    </div>
-
-
-    <div class="center">
+    <div style="text-align: center;">
         <form action="/checkandpush" method="post" style="width:100%; margin-top:15px" class="style-1">
             Paste base64 encoded, unsigned or signed transaction data here<br/>
-            (In Linux, can get base64 signed raw tx data: <i>base64 signed_monero_tx | xclip -selection clipboard</i>)<br/>
-            (In Windows, can get base64 signed raw tx data: <i>certutil.exe -encode -f signed_monero_tx encoded.txt & type "encoded.txt" | clip</i>)<br/>
-            <textarea name="rawtxdata" rows="20" cols="80"></textarea>
+            (In Linux, can get base64 signed raw tx data: <code>base64 signed_sumokoin_tx | xclip -selection clipboard</code>)<br/>
+            (In Windows, can get base64 signed raw tx data: <code>certutil.exe -encode -f signed_sumokoin_tx encoded.txt & type "encoded.txt" | clip</code>)
+			<br/>
+            Note: data is sent to the server, as the calculations are done on the server side
             <br/>
-            <input type="submit" name="action" value="check">
-            &nbsp;  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;  &nbsp; &nbsp; &nbsp; &nbsp;
-            &nbsp;  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;  &nbsp; &nbsp; &nbsp; &nbsp;
-            <input type="submit" name="action" value="push">
+            <textarea name="rawtxdata" rows="20" cols="80"></textarea>
+            <div style="margin-top: 20px;">
+				<input class="btn btn-explorer" type="submit" name="action" value="Check">
+				&nbsp;  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;  &nbsp; &nbsp; &nbsp; &nbsp;
+				&nbsp;  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;  &nbsp; &nbsp; &nbsp; &nbsp;
+				<input class="btn btn-explorer" type="submit" name="action" value="Push">
+			</div>
         </form>
     </div>
-
-
-</div>

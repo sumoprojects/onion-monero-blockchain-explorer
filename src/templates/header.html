@@ -6,37 +6,96 @@
     {{#refresh}}
         <meta http-equiv="refresh" content="10">
     {{/refresh}}
-    <title>Onion Sumokoin Blockchain Explorer</title>
-    <!--<link rel="stylesheet" type="text/css" href="/css/style.css">-->
-    <style type="text/css">
+    <title>Sumokoin Blockchain Explorer</title>
+	<meta name="description" content="Sumokoin Blockchain Explorer: advanced blockchain explorer with utilities: transaction checker/pusher, key images cheker, output keys checker" />
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+	<script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+	<link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+    <link href="//netdna.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+	
+	<style type="text/css">
         {{#css_styles}}{{/css_styles}}
     </style>
-
+	
+	<!-- favicon -->
+	<link rel="apple-touch-icon" sizes="57x57" href="//www.sumokoin.org/user/themes/grayscale/img/favicon/apple-icon-57x57.png">
+	<link rel="apple-touch-icon" sizes="60x60" href="//www.sumokoin.org/user/themes/grayscale/img/favicon/apple-icon-60x60.png">
+	<link rel="apple-touch-icon" sizes="72x72" href="//www.sumokoin.org/user/themes/grayscale/img/favicon/apple-icon-72x72.png">
+	<link rel="apple-touch-icon" sizes="76x76" href="//www.sumokoin.org/user/themes/grayscale/img/favicon/apple-icon-76x76.png">
+	<link rel="apple-touch-icon" sizes="114x114" href="//www.sumokoin.org/user/themes/grayscale/img/favicon/apple-icon-114x114.png">
+	<link rel="apple-touch-icon" sizes="120x120" href="//www.sumokoin.org/user/themes/grayscale/img/favicon/apple-icon-120x120.png">
+	<link rel="apple-touch-icon" sizes="144x144" href="//www.sumokoin.org/user/themes/grayscale/img/favicon/apple-icon-144x144.png">
+	<link rel="apple-touch-icon" sizes="152x152" href="//www.sumokoin.org/user/themes/grayscale/img/favicon/apple-icon-152x152.png">
+	<link rel="apple-touch-icon" sizes="180x180" href="//www.sumokoin.org/user/themes/grayscale/img/favicon/apple-icon-180x180.png">
+	<link rel="icon" type="image/png" sizes="192x192"  href="//www.sumokoin.org/user/themes/grayscale/img/favicon/android-icon-192x192.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="//www.sumokoin.org/user/themes/grayscale/img/favicon/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="96x96" href="//www.sumokoin.org/user/themes/grayscale/img/favicon/favicon-96x96.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="//www.sumokoin.org/user/themes/grayscale/img/favicon/favicon-16x16.png">
+	
+	 <script type="text/javascript">
+        $(function(){
+            $('.tx-input').click(function(){
+                $(this).next().next().toggle();
+            });
+        });
+    </script>
 </head>
-<body>
-<div>
+<body id="page-top" data-spy="scroll" data-target=".navbar-fixed-top">
+	
+	<nav class="navbar navbar-custom navbar-fixed-top" role="navigation">
+		<div class="container">
+			<div class="navbar-header">
+				<button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-main-collapse">
+					<i class="fa fa-bars"></i>
+				</button>
+				<a class="navbar-brand page-scroll" href="/">
+					<i class="fa fa-circle sumo-orange"></i> Sumokoin - Blockchain Explorer
+				</a>
+			</div>
+			<div class="collapse navbar-collapse navbar-right navbar-main-collapse">
+				<ul class="nav navbar-nav">
+					<!-- Hidden li included to remove active class from about link when scrolled up past about section -->
+					<li class="hidden">
+						<a href="#page-top"></a>
+					</li>
+					<li ><a class="page-scroll" href="/rawtx" >TX Pusher </a></li>
+					<li ><a class="page-scroll" href="/rawkeyimgs" >Key Images Checker </a></li>
+					<li ><a class="page-scroll" href="/rawoutputkeys" >Output Keys Checker </a></li>
+					<li class="external-menu-link"><a class="page-scroll" href="https://www.sumokoin.org" target="_blank">Sumokoin.org <i class="fa fa-external-link"></i></a></li>
+				</ul>
+			</div>
+		</div>
+	</nav>
+	
 
-    <div class="center">
-        <h1 class="center"><a href="/">Onion Sumokoin Blockchain Explorer</a></h1>
-        <h4 style="font-size: 15px; margin: 0px">(no javascript - no cookies - no web analytics trackers - no images - open sourced)</h4>
-    </div>
-
+<div id="explorer" class="container" style="margin-top: 100px;">
+    
+	<!-- <h1 class="center" style="margin: 20px auto;"><a href="/">Sumokoin Blockchain Explorer</a></h1> -->
 
     {{^testnet}}
-        <div class="center">
-            <form action="/search" method="get" style="width:100%; margin-top:15px" class="style-1">
-                <input type="text" name="value" size="120"
-                       placeholder="blk height, blk hash, tx hash, tx payment id, encrypted payment id, tx public key, input key image, stealth address, and datetime">
-                <input type="submit" value="Search">
-            </form>
-        </div>
+		<form action="/search" method="get" id="explorer-search" autocomplete="off">
+			 <div class="input-group">
+				<input class="form-control" type="text" name="value" size="120"
+					   placeholder="blk height, blk hash, tx hash, tx payment id, encrypted payment id, tx public key, input key image, stealth address, and datetime">
+				<span class="input-group-btn">
+					<button class="btn btn-explorer" type="submit" id="lookUp">
+					<span><i class="fa fa-search"></i> Lookup</span>
+					</button>
+				</span>
+			</div>
+		</form>
+        
     {{/testnet}}
     {{#testnet}}
-        <div class="center">
-            <form action="/search" method="get" style="width:100%; margin-top:15px" class="style-1">
-                <input type="text" name="value" size="100"
-                       placeholder="blk height, blk hash, tx hash, tx payment id">
-                <input type="submit" value="Search">
-            </form>
-        </div>
+		<form action="/search" method="get" id="explorer-search" autocomplete="off">
+			 <div class="input-group">
+				<input  class="form-control" type="text" name="value" size="100"
+					   placeholder="blk height, blk hash, tx hash, tx payment id">
+				<span class="input-group-btn">
+					<button class="btn btn-explorer" type="submit" id="lookUp">
+					<span><i class="fa fa-search"></i> Lookup</span>
+					</button>
+				</span>
+			</div>
+		</form>
     {{/testnet}}

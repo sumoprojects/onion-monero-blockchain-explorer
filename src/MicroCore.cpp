@@ -10,8 +10,8 @@ namespace
 {
     // NOTE: These values should match blockchain.cpp
     // TODO: Refactor
-    const uint64_t mainnet_hard_fork_version_1_till = 1009826;
-    const uint64_t testnet_hard_fork_version_1_till = 624633;
+    const uint64_t mainnet_hard_fork_version_1_till = 1;
+    const uint64_t testnet_hard_fork_version_1_till = 1;
 }
 
 

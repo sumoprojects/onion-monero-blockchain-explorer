@@ -18,15 +18,23 @@ namespace xmreg
         p.add("txhash", -1);
 
         options_description desc(
-                "xmrblocks, start Onion Monero Blockchain Explorer");
+                "xmrblocks, start Onion Sumokoin Blockchain Explorer");
 
         desc.add_options()
                 ("help,h", value<bool>()->default_value(false)->implicit_value(true),
                  "produce help message")
                 ("testnet,t", value<bool>()->default_value(false)->implicit_value(true),
                  "use testnet blockchain")
-                ("enable-pusher", value<bool>()->default_value(false)->implicit_value(true),
+                ("enable-pusher", value<bool>()->default_value(true)->implicit_value(true),
                  "enable pushing signed tx")
+                ("enable-key-image-checker", value<bool>()->default_value(true)->implicit_value(true),
+                 "enable key images file checker")
+                ("enable-output-key-checker", value<bool>()->default_value(true)->implicit_value(true),
+                 "enable outputs key file checker")
+                ("enable-autorefresh-option", value<bool>()->default_value(true)->implicit_value(true),
+                 "enable users to have the index page on autorefresh")
+				("bindaddr,a", value<string>()->default_value("127.0.0.1"),
+                 "default bind address")
                 ("port,p", value<string>()->default_value("8081"),
                  "default port")
                 ("bc-path,b", value<string>(),
@@ -37,8 +45,8 @@ namespace xmreg
                  "A path to key file for ssl (https) functionality")
                 ("custom-db-path,c", value<string>(),
                  "path to the custom lmdb database used for searching things")
-                ("deamon-url,d", value<string>()->default_value("http:://127.0.0.1:19733"),
-                 "monero address string");
+                ("deamon-url,d", value<string>()->default_value("http:://127.0.0.1:19734"),
+                 "Sumokoin deamon [URL]:[RPC port]");
 
 
         store(command_line_parser(acc, avv)

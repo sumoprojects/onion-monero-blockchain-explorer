@@ -1,68 +1,80 @@
 
 <div class="center">
-     <h3 style="font-size: 12px; margin-top: 20px">
-
-        Server time: {{server_timestamp}} | <a href="/rawtx">Tx pusher </a>
-         | <a href="/rawkeyimgs">Key images checker</a>
-         | <a href="/rawoutputkeys">Output keys checker</a> |
-
-        {{#refresh}}
-            <a href="/">Autorefresh is ON (10 s)</a>
-        {{/refresh}}
-        {{^refresh}}
-            <a href="/autorefresh">Autorefresh is OFF</a>
-        {{/refresh}}
-         {{#testnet}}
+     <h3 style="font-size: 14px; margin-top: 20px">
+		Server time: {{server_timestamp}} 
+		
+		{{#enable_autorefresh_option}}
+			{{#refresh}}
+			   | <a href="/">Autorefresh is ON (10 s)</a>
+			{{/refresh}}
+			{{^refresh}}
+			   | <a href="/autorefresh">Autorefresh is OFF</a>
+			{{/refresh}}
+		{{/enable_autorefresh_option}}
+         
+		 {{#testnet}}
           |
-            This is <span style="color:#ff6b62">testnet</span> blockchian
+            This is <span style="color:#ff6b62">testnet</span> blockchain
          {{/testnet}}
 
-        </h3>
+    </h3>
 </div>
 
     {{{mempool_info}}}
 
+<div class="panel panel-explorer">
+	<div class="panel-heading">
     {{#is_page_zero}}
-      <h2>Transactions in the last 25 blocks</h2>
+      Transactions in the last 25 blocks
     {{/is_page_zero}}
     {{^is_page_zero}}
-      <h2>Transactions in older blocks<!--(height: {{height}})--></h2>
+      Transactions in older blocks<!--(height: {{height}})-->
     {{/is_page_zero}}
+	&nbsp;<small>(Median size of these blocks: {{blk_size_median}} kB)</small>
+	</div>
 
-    <div class="center">
-
-            <table class="center">
-                <tr>
-                    <td>height</td>
-                    <td>age {{age_format}}<!--(Δm)--></td>
-                    <td>tx hash</td>
-                    <td>fees</td>
-                    <td>outputs</td>
-                    <td>in/out</td>
-                    <td>mixin</td>
-                    <td>size [kB]</td>
-                </tr>
-                {{#txs}}
-                <tr>
-                    <td><a href="/block/{{height}}">{{height}}</a></td>
-                    <td>{{age}}<!--{{time_delta}}--></td>
-                    <td><a href="/tx/{{hash}}">{{hash}}</a></td>
-                    <td>{{tx_fee_short}}</td>
-                    <td>{{sum_outputs_short}}</td>
-                    <td>{{no_inputs}}/{{no_outputs}}</td>
-                    <td>{{mixin}}</td>
-                    <td>{{tx_size_short}}</td>
-                </tr>
-                {{/txs}}
+    <div class="panel-body">
+		 <div class="table-responsive">
+            <table class="table table-hover table-striped">
+				<thead>
+                    <th><i class="fa fa-bars"></i> Height</th>
+					<th><i class="fa fa-clock-o"></i> Age {{age_format}}<!--(Δm)--></th>
+					<th><i class="fa fa-paw"></i> TX hash</th>
+					<th><i class="fa fa-tag"></i> Fees</th>
+					<th><i class="fa fa-money"></i> Outputs</th>
+					<th><i class="fa fa-exchange"></i> In/Out</th>
+					<th><i class="fa fa-circle-o"></i> Rct/Type</th>
+					<th><i class="fa fa-sitemap"></i> Mixin</th>
+					<th><i class="fa fa-floppy-o"></i> Size [kB]</th>
+                </thead>
+				<tbody>
+					{{#txs}}
+					<tr>
+						<td><a href="/block/{{height}}">{{height}}</a></td>
+						<td>{{age}}<!--{{time_delta}}--></td>
+						<td><a href="/tx/{{hash}}">{{hash}}</a></td>
+						<td>{{tx_fee_short}}</td>
+						<td>{{{sum_outputs_short}}}</td>
+						<td>{{no_inputs}}/{{no_outputs}}</td>
+						<td>
+							{{#is_ringct}}yes/{{rct_type}}{{/is_ringct}}
+							{{^is_ringct}}no{{/is_ringct}}
+						</td>
+						<td>{{mixin}}</td>
+						<td>{{tx_size_short}}</td>
+					</tr>
+					{{/txs}}
+				</tbody>
             </table>
-
-            <div id="pages" class="center" style="text-align: center;">
-             {{^is_page_zero}}
-               <a href="/page/{{prev_page}}">previous page</a> |
-               <a href="/">first page</a> |
-             {{/is_page_zero}}
-                current page: {{page_no}}/<a href="/page/{{total_page_no}}">{{total_page_no}}</a>
-                | <a href="/page/{{next_page}}">next page</a>
-            </div>
-
+		</div>
+		
+		<div id="pages" class="center" style="text-align: center;">
+		 {{^is_page_zero}}
+		   <a href="/page/{{prev_page}}">previous page</a> |
+		   <a href="/">first page</a> |
+		 {{/is_page_zero}}
+			current page: {{page_no}}/<a href="/page/{{total_page_no}}">{{total_page_no}}</a>
+			| <a href="/page/{{next_page}}">next page</a>
+		</div>
     </div>
+</div>

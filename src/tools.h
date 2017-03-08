@@ -137,6 +137,12 @@ sum_money_in_inputs(const transaction& tx);
 pair<uint64_t, uint64_t>
 sum_money_in_inputs(const string& json_str);
 
+uint64_t
+count_nonrct_inputs(const transaction& tx);
+
+uint64_t
+count_nonrct_inputs(const string& json_str);
+
 array<uint64_t, 2>
 sum_money_in_tx(const transaction& tx);
 
@@ -251,10 +257,36 @@ parse(const std::string& str, string format="%Y-%m-%d %H:%M:%S");
 
 static
 string
-xmr_amount_to_str(const uint64_t& xmr_amount, string format="{:0.9f}")
+xmr_amount_to_str(const uint64_t& xmr_amount,
+                  string _format="{:0.9f}",
+                  bool zero_to_confidential_icon=true,
+				  bool question_mark_text=false)
 {
-    return fmt::format("{:0.9f}", XMR_AMOUNT(xmr_amount));
+	string amount_str;
+    if(question_mark_text)
+	{
+		amount_str = "?";
+	}
+	else
+	{
+		amount_str = "<i class=\"fa fa-envelope-o\"></i> confidential";
+	}
+
+    if (!zero_to_confidential_icon)
+    {
+        amount_str = fmt::format(_format, XMR_AMOUNT(xmr_amount));
+    }
+    else
+    {
+        if (xmr_amount > 0 && zero_to_confidential_icon == true)
+        {
+            amount_str = fmt::format(_format, XMR_AMOUNT(xmr_amount));
+        }
+    }
+
+    return amount_str;
 }
+
 
 bool
 is_output_ours(const size_t& output_index,
@@ -296,6 +328,25 @@ void chunks(Iterator begin,
 
 bool
 make_tx_from_json(const string& json_str, transaction& tx);
+
+string
+make_printable(const string& in_s);
+
+string
+get_human_readable_timestamp(uint64_t ts);
+
+// Get the median of an unordered set of numbers of arbitrary
+// type without modifying the underlying dataset.
+// taken from http://stackoverflow.com/a/19695285
+template <typename It>
+typename std::iterator_traits<It>::value_type
+calc_median(It it_begin, It it_end)
+{
+    using T = typename std::iterator_traits<It>::value_type;
+    std::vector<T> data(it_begin, it_end);
+    std::nth_element(data.begin(), data.begin() + data.size() / 2, data.end());
+    return data[data.size() / 2];
+}
 
 }
 

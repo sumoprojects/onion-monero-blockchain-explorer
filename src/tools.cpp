@@ -385,6 +385,58 @@ sum_money_in_inputs(const string& json_str)
     return sum_xmr;
 };
 
+uint64_t
+count_nonrct_inputs(const transaction& tx)
+{
+    uint64_t num {0};
+
+    size_t input_no = tx.vin.size();
+
+    for (size_t i = 0; i < input_no; ++i)
+    {
+
+        if(tx.vin[i].type() != typeid(cryptonote::txin_to_key))
+        {
+            continue;
+        }
+
+        // get tx input key
+        const cryptonote::txin_to_key& tx_in_to_key
+                = boost::get<cryptonote::txin_to_key>(tx.vin[i]);
+
+        if (tx_in_to_key.amount != 0)
+            ++num;
+    }
+
+    return num;
+}
+
+uint64_t
+count_nonrct_inputs(const string& json_str)
+{
+    uint64_t num {0};
+
+    json j;
+    try
+    {
+        j = json::parse( json_str);
+    }
+    catch (std::invalid_argument& e)
+    {
+        cerr << "count_nonrct_inputs: " << e.what() << endl;
+        return num;
+    }
+
+    for (json& vin: j["vin"])
+    {
+        uint64_t amount = vin["key"]["amount"].get<uint64_t>();
+        if (amount != 0)
+            ++num;
+    }
+
+    return num;
+};
+
 array<uint64_t, 2>
 sum_money_in_tx(const transaction& tx)
 {
@@ -727,10 +779,11 @@ decode_ringct(const rct::rctSig& rv,
     crypto::derivation_to_scalar(derivation, i, scalar1);
 
     try
-    {
-        switch (rv.type)
+	{
+		switch (rv.type)
         {
-            case rct::RCTTypeSimple:
+			case rct::RCTTypeSimple:
+				
                 amount = rct::decodeRctSimple(rv,
                                               rct::sk2rct(scalar1),
                                               i,
@@ -743,8 +796,23 @@ decode_ringct(const rct::rctSig& rv,
                                         mask);
                 break;
             default:
-                cerr << "Unsupported rct type: " << rv.type << endl;
-                return false;
+				cerr << "Unsupported rct type: " << rv.type << endl;
+				// Fixme: Unknown type, try one if type to decode anyway
+				try
+				{
+					amount = rct::decodeRctSimple(rv,
+											rct::sk2rct(scalar1),
+											i,
+											mask);
+				}
+				catch (...)
+				{
+					amount = rct::decodeRct(rv,
+										rct::sk2rct(scalar1),
+										i,
+										mask);
+				}
+				//return false;
         }
     }
     catch (const std::exception &e)
@@ -1243,6 +1311,63 @@ make_tx_from_json(const string& json_str, transaction& tx)
     //cout << "From reconstructed tx: " << obj_to_json_str(tx) << endl;
 
     return true;
+}
+
+string
+make_printable(const string& in_s)
+{
+    string output;
+
+    for (char c: in_s)
+    {
+
+        if (isprint(c))
+        {
+            output += c;
+        }
+        else
+        {
+            switch(c){
+                case '\000': output += "\\000";break;
+                case '\001': output += "\\001";break;
+                case '\002': output += "\\002";break;
+                case '\003': output += "\\003";break;
+                case '\004': output += "\\004";break;
+                case '\005': output += "\\005";break;
+                case '\006': output += "\\006";break;
+                case '\007': output += "\\007";break;
+                // there are more case but for now its ok
+                default:
+                    stringstream ss;
+                    ss << std::hex << (int)c;
+                    output += "0x" + ss.str();
+                    break;
+            }
+        }
+
+    }
+
+    return output;
+}
+
+
+
+string
+get_human_readable_timestamp(uint64_t ts)
+{
+    char buffer[64];
+    if (ts < 1234567890)
+        return "<unknown>";
+
+    time_t tt = ts;
+
+    struct tm tm;
+
+    gmtime_r(&tt, &tm);
+
+    strftime(buffer, sizeof(buffer), "%Y-%m-%d %I:%M:%S", &tm);
+
+    return std::string(buffer);
 }
 
 }

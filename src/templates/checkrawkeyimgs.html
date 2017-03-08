@@ -1,82 +1,68 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <META HTTP-EQUIV="CACHE-CONTROL" CONTENT="NO-CACHE">
-    {{#refresh}}
-    <meta http-equiv="refresh" content="10">
-    {{/refresh}}
-    <title>Onion Monero Blockchain Explorer</title>
-    <!--<link rel="stylesheet" type="text/css" href="/css/style.css">-->
-    <style type="text/css">
-        {{#css_styles}}{{/css_styles}}
-    </style>
 
-</head>
-<body>
-<div>
-
-    <div class="center">
-        <h1 class="center"><a href="/">Onion Monero Signed Key Images Checker</a></h1>
-        <h4 style="font-size: 15px; margin: 0px">(no javascript - no cookies - no web analytics trackers - no images - open sourced)</h4>
-    </div>
-
+    <h3>Signed Key Images Checker</h3>
 
     {{#has_error}}
         <h4 style="color:red">Attempt failed</h4>
-        <h4>{{error_msg}}</h4>
+        <h5>{{error_msg}}</h5>
     {{/has_error}}
     {{^has_error}}
-        <h4>Key images for address: {{address}}</h4>
-        <h4>Viewkey: {{viewkey}}</h4>
+        <h5>Key images for address: <code>{{address}}</code></h5>
+        <h5>Viewkey: <code>{{viewkey}}</code></h5>
         {{#has_total_xmr}}
-            <h4>Total xmr: {{total_xmr}}</h4>
+            <h4>Total: <strong>{{total_xmr}}</strong> SUMO</h4>
         {{/has_total_xmr}}
 
-        <div class="center">
-
-            <form action="/genrawkeyimgs" method="post" style="width:100%; margin-top:15px" class="style-1">
-                <table class="center" style="width:80%">
-                    <tr>
-                        <td>Key no.</td>
-                        <td>Key image</td>
-                        <td>Timestamp</td>
-                        <td>RingCT</td>
-                        <td>Amount</td>
-                        <td>Is spent?</td>
-                    </tr>
-                    {{#key_imgs}}
-                    <input type="hidden" id="key_img_{{key_image}}" name="key_sig_pair_{{key_image}}" value="{{signature}}">
-                        <tr>
-                            <td>{{key_no}}</td>
-                            <td>
-                                {{#tx_hash_found}}
-                                    <a href="/tx/{{tx_hash}}">{{key_image}}</a>
-                                {{/tx_hash_found}}
-                                {{^tx_hash_found}}
-                                    {{key_image}}
-                                {{/tx_hash_found}}
-                            </td>
-                            <td>{{timestamp}}</td>
-                            <td>{{is_ringct}}</td>
-                            <td>{{amount}}</td>
-                            <td>
-                                {{#is_spent}}
-                                    <span style="color: #008009;font-weight: bold">{{is_spent}}</span>
-                                {{/is_spent}}
-                                {{^is_spent}}
-                                    {{is_spent}}
-                                {{/is_spent}}
-                            </td>
-                        </tr>
-                    {{/key_imgs}}
-                </table>
-                <br/>
-            <!--    <input type="submit" name="action" value="remove selected keys">-->
-            </form>
-
+        <div class="panel panel-explorer">
+			<div class="panel-heading">
+				Key images
+			</div>
+			<div class="panel-body">
+				<div class="table-responsive">
+				  <table class="table table-hover table-striped">
+					<thead>
+						<tr>
+							<th>Key#</th>
+							<th>Key Image</th>
+							<th>Timestamp</th>
+							<th>RingCT</th>
+							<th>Amount</th>
+							<th>Is Spent?</th>
+						</tr>
+					</thead>
+					<tbody>
+						{{#key_imgs}}
+						<tr>
+							<td>{{key_no}}</td>
+							<td>
+								{{#tx_hash_found}}
+									<a href="/tx/{{tx_hash}}">{{key_image}}</a>
+								{{/tx_hash_found}}
+								{{^tx_hash_found}}
+									{{key_image}}
+								{{/tx_hash_found}}
+							</td>
+							<td>{{timestamp}}</td>
+							<td>
+								{{#is_ringct}}Yes{{/is_ringct}}
+								{{^is_ringct}}No{{/is_ringct}}
+							</td>
+							<td>{{{amount}}}</td>
+							<td>
+								{{#is_spent}}
+									<span class="is-spent-true">Yes</span>
+								{{/is_spent}}
+								{{^is_spent}}
+									No
+								{{/is_spent}}
+							</td>
+						</tr>
+						{{/key_imgs}}
+					</tbody>
+				  </table>
+				</div>
+			</div>
         </div>
 
     {{/has_error}}
 
-</div>
+
