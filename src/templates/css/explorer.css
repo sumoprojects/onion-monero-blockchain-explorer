@@ -452,3 +452,8 @@ code {
 	font-size: 12px;
 	font-weight: bold;
 }
+
+code {
+	background-color: transparent;
+	color: #e68a00;
+}

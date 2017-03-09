@@ -1613,8 +1613,9 @@ public:
 
 
         context["outputs"] = outputs;
-        context["sum_xmr"] = xmreg::xmr_amount_to_str(sum_xmr);
-
+		context["sum_xmr"] = xmreg::xmr_amount_to_str(sum_xmr, "{:0.9f}", false);
+		context["has_matched_outputs"] = sum_xmr > 0;
+		
         context["inputs"]  = inputs;
 
         // read my_outputs.html

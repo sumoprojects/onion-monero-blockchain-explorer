@@ -87,7 +87,12 @@
 		  </div>
 		</div>
 	</div>
-	<h4>Sum SUMO from matched outputs: {{{sum_xmr}}}</h4>
+	{{#has_matched_outputs}}
+	<h4 style="color:green">Found! Sum amount from matched outputs: <strong>{{sum_xmr}}</strong> SUMO</h4>
+	{{/has_matched_outputs}}
+	{{^has_matched_outputs}}
+	<h4 style="color:red">NO matched outputs found!</h4>
+	{{/has_matched_outputs}}
 	
 	<hr>
 	

@@ -1,15 +1,14 @@
-<br/>
     <h3>Transaction Pusher</h3>
 
     <div style="text-align: center;">
         <form action="/checkandpush" method="post" style="width:100%; margin-top:15px" class="style-1">
-            Paste base64 encoded, unsigned or signed transaction data here<br/>
-            (In Linux, can get base64 signed raw tx data: <code>base64 signed_sumokoin_tx | xclip -selection clipboard</code>)<br/>
-            (In Windows, can get base64 signed raw tx data: <code>certutil.exe -encode -f signed_sumokoin_tx encoded.txt & type "encoded.txt" | clip</code>)
-			<br/>
-            Note: data is sent to the server, as the calculations are done on the server side
-            <br/>
-            <textarea name="rawtxdata" rows="20" cols="80"></textarea>
+            <h4>Paste base64 encoded, unsigned or signed transaction data here<h4>
+            <h5>(In Linux, can get base64 signed raw tx data: <code>base64 signed_sumokoin_tx | xclip -selection clipboard</code>)</h5>
+            <h5>(In Windows, can get base64 signed raw tx data: <code>certutil.exe -encode -f signed_sumokoin_tx encoded.txt & type "encoded.txt" | clip</code>)</h5>
+			
+			<textarea name="rawtxdata" rows="20" cols="100"></textarea>
+			
+			<h5 style="font-weight: bold;">Note: Data is sent to the server, as the calculations are done on the server side</h5>
             <div style="margin-top: 20px;">
 				<input class="btn btn-explorer" type="submit" name="action" value="Check">
 				&nbsp;  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;  &nbsp; &nbsp; &nbsp; &nbsp;

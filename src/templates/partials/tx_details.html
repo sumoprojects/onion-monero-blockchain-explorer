@@ -1,9 +1,11 @@
 	 <div class="panel panel-explorer panel-tx">
           <div class="panel-heading">Transaction</div>
+		  {{#blk_found}}
           <div class="row">
             <div class="col-xs-12 col-sm-2">Tx hash: </div>
             <div class="col-xs-12 col-sm-10" id="tx-hash">{{tx_hash}}</div>
           </div>
+		  {{/blk_found}}
           <div class="row">
             <div class="col-xs-12 col-sm-2">Tx prefix hash: </div>
             <div class="col-xs-12 col-sm-10">{{tx_prefix_hash}}</div>
@@ -47,7 +49,7 @@
             <div class="col-xs-12 col-sm-10"><a href="/block/{{blk_height}}">{{blk_height}}</a></div>
 			{{/blk_found}}
 			{{^blk_found}}
-            <div class="col-xs-12 col-sm-10">{{blk_height}}</div>
+            <div class="col-xs-12 col-sm-10">N/A (tx still in mempool)</div>
 			{{/blk_found}}
           </div>
           <div class="row">
@@ -134,10 +136,10 @@
             <h4 style="margin: 0px">Check which outputs belong to given Sumokoin address and viewkey</h4>
 			<h5 style="margin: 0px">
                 For RingCT transactions, outputs' amounts are also decoded
-                <br/>
+                <br/><br/>
                 <strong>Note: address and viewkey are sent to the server, as the calculations are done on the server side</strong>
             </h5>
-            <form action="/myoutputs" method="get" style="padding-top:20px; max-width: 900px; margin: auto; text-align: center;">
+            <form action="/myoutputs" method="get" style="padding-top:20px; max-width: 900px; margin: auto; text-align: center;" autocomplete="off">
               <input type="hidden" name="tx_hash" value="{{tx_hash}}">
               <div class="form-group">
                 <input type="text" class="form-control" id="inputMoneroAddress" placeholder="Sumokoin address" name="xmr_address"/>
@@ -151,12 +153,12 @@
           </div>
           <div role="tabpanel" class="tab-pane" id="prove-sending">
             <h4 style="margin: 0px">Prove to someone that you send them Sumokoin in this transaction</h4>
-            <h5 style="margin: 0px">Tx private key can be obtained using <i>get_tx_key</i>
-                command in  <i>sumo-wallet-cli</i> command line tool
-				<br/>
+            <h5 style="margin: 0px">Tx private key can be obtained using <code>get_tx_key</code>
+                command in  <code>sumo-wallet-cli</code> command line tool
+				<br/><br/>
                 <strong>Note: address and tx private key are sent to the server, as the calculations are done on the server side</strong>
 			</h5>
-            <form action="/prove" method="get" style="max-width: 900px; margin: auto; text-align: center;">
+            <form action="/prove" method="get" style="max-width: 900px; margin: auto; text-align: center;" autocomplete="off">
                <input type="hidden" name="txhash" value="{{tx_hash}}"><br/>
               <div class="form-group">
                 <input type="text" class="form-control" id="inputTxPrivateKey" placeholder="Tx private key" name="txprvkey"/>
