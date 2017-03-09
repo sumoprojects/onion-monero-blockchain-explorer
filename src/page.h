@@ -4237,26 +4237,28 @@ private:
         // get indices of outputs in amounts tables
         vector<uint64_t> out_amount_indices;
 
-        try
-        {
+		if(tx_hash_str != "0000000000000000000000000000000000000000000000000000000000000000"){
+			try
+			{
 
-            uint64_t tx_index;
+				uint64_t tx_index;
 
-            if (core_storage->get_db().tx_exists(txd.hash, tx_index))
-            {
-                out_amount_indices = core_storage->get_db()
-                        .get_tx_amount_output_indices(tx_index);
-            }
-            else
-            {
-                cerr << "get_tx_outputs_gindexs failed to find transaction with id = " << txd.hash;
-            }
+				if (core_storage->get_db().tx_exists(txd.hash, tx_index))
+				{
+					out_amount_indices = core_storage->get_db()
+							.get_tx_amount_output_indices(tx_index);
+				}
+				else
+				{
+					cerr << "get_tx_outputs_gindexs failed to find transaction with id = " << txd.hash;
+				}
 
-        }
-        catch(const exception& e)
-        {
-            cerr << e.what() << endl;
-        }
+			}
+			catch(const exception& e)
+			{
+				cerr << e.what() << endl;
+			}
+		}
 
         uint64_t output_idx {0};
 
@@ -4563,19 +4565,22 @@ private:
                 {
                     transaction tx;
 
+                    //cout << "\n\n\n_tx_info.id_hash:" << _tx_info.id_hash << endl;
+
                     if (!xmreg::make_tx_from_json(_tx_info.tx_json, tx))
                     {
                         cerr << "Cant make tx from _tx_info.tx_json" << endl;
                         continue;
                     }
-
-                    if (_tx_info.id_hash != pod_to_hex(get_transaction_hash(tx)))
+					
+					//FIXME: get_transaction_hash failed on some txs, temporarily disable this check
+					/*  if (_tx_info.id_hash != pod_to_hex(get_transaction_hash(tx)))
                     {
                         cerr << "Hash of reconstructed tx from json does not match "
                                 "what we should get!"
                              << endl;
                         continue;
-                    }
+                    } */
 
                     if (tx_hash == mem_tx_hash)
                     {
@@ -4588,7 +4593,8 @@ private:
 
         return found_txs;
     }
-
+	
+	
     pair<string, string>
     get_age(uint64_t timestamp1, uint64_t timestamp2, bool full_format = 0)
     {

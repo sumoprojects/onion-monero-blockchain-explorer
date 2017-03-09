@@ -797,22 +797,7 @@ decode_ringct(const rct::rctSig& rv,
                 break;
             default:
 				cerr << "Unsupported rct type: " << rv.type << endl;
-				// Fixme: Unknown type, try one if type to decode anyway
-				try
-				{
-					amount = rct::decodeRctSimple(rv,
-											rct::sk2rct(scalar1),
-											i,
-											mask);
-				}
-				catch (...)
-				{
-					amount = rct::decodeRct(rv,
-										rct::sk2rct(scalar1),
-										i,
-										mask);
-				}
-				//return false;
+				return false;
         }
     }
     catch (const std::exception &e)

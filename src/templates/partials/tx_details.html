@@ -123,6 +123,7 @@
         </div>
      </div>
 	{{^have_raw_tx}}
+	{{#blk_found}}
     <div class="tx-tools">
         <ul class="nav nav-tabs" role="tablist">
           <li role="presentation" class="active"><a href="#decode-outputs" aria-controls="decode-outputs" role="tab" data-toggle="tab">Decode outputs</a></li>
@@ -134,7 +135,7 @@
 			<h5 style="margin: 0px">
                 For RingCT transactions, outputs' amounts are also decoded
                 <br/>
-                Note: address and viewkey are sent to the server, as the calculations are done on the server side
+                <strong>Note: address and viewkey are sent to the server, as the calculations are done on the server side</strong>
             </h5>
             <form action="/myoutputs" method="get" style="padding-top:20px; max-width: 900px; margin: auto; text-align: center;">
               <input type="hidden" name="tx_hash" value="{{tx_hash}}">
@@ -153,7 +154,7 @@
             <h5 style="margin: 0px">Tx private key can be obtained using <i>get_tx_key</i>
                 command in  <i>sumo-wallet-cli</i> command line tool
 				<br/>
-                Note: address and tx private key are sent to the server, as the calculations are done on the server side
+                <strong>Note: address and tx private key are sent to the server, as the calculations are done on the server side</strong>
 			</h5>
             <form action="/prove" method="get" style="max-width: 900px; margin: auto; text-align: center;">
                <input type="hidden" name="txhash" value="{{tx_hash}}"><br/>
@@ -168,10 +169,11 @@
           </div>
         </div>
     </div>
+	<br/>
+    <br/>
+	{{/blk_found}}
 	{{/have_raw_tx}}
-    <br/>
-    <br/>
-
+    
 	{{#has_inputs}}
     <div class="panel panel-explorer">
         <div class="panel-heading">
