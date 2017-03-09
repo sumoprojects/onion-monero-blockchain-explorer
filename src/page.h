@@ -338,8 +338,8 @@ public:
 
         if (!is_connected)
         {
-            cerr << "Connection to the Monero demon does not exist or was lost!" << endl;
-            return "Connection to the Monero demon does not exist or was lost!";
+            cerr << "Connection to the Sumokoin demon does not exist or was lost!" << endl;
+            return "Connection to the Sumokoin demon does not exist or was lost!";
         }
 
         //get current server timestamp
@@ -1184,7 +1184,7 @@ public:
 
         if (xmr_address_str.empty())
         {
-            return string("Monero address not provided!");
+            return string("Sumokoin address not provided!");
         }
 
         if (viewkey_str.empty())
