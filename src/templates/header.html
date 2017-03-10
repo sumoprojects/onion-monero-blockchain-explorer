@@ -2,43 +2,44 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <META HTTP-EQUIV="CACHE-CONTROL" CONTENT="NO-CACHE">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta http-equiv="cache-control" content="no-cache">
     {{#refresh}}
-        <meta http-equiv="refresh" content="10">
+    <meta http-equiv="refresh" content="10">
     {{/refresh}}
-    <title>Sumokoin Blockchain Explorer</title>
-	<meta name="description" content="Sumokoin Blockchain Explorer: advanced blockchain explorer with utilities: transaction checker/pusher, key images cheker, output keys checker" />
-    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
-	<script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
-	<link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
-    <link href="//netdna.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <meta name="description" content="Sumokoin Blockchain Explorer: advanced blockchain explorer with utilities: transaction checker/pusher, key images cheker, output keys checker" />
+	<meta name="viewport" content="width=device-width, minimum-scale=1" />
+	<meta name="referrer" content="no-referrer-when-downgrade" />
 	
-	<style type="text/css">
-        {{#css_styles}}{{/css_styles}}
-    </style>
+	<title>Sumokoin | Blockchain Explorer</title>
 	
-	<!-- favicon -->
-	<link rel="apple-touch-icon" sizes="57x57" href="//www.sumokoin.org/user/themes/grayscale/img/favicon/apple-icon-57x57.png">
-	<link rel="apple-touch-icon" sizes="60x60" href="//www.sumokoin.org/user/themes/grayscale/img/favicon/apple-icon-60x60.png">
-	<link rel="apple-touch-icon" sizes="72x72" href="//www.sumokoin.org/user/themes/grayscale/img/favicon/apple-icon-72x72.png">
-	<link rel="apple-touch-icon" sizes="76x76" href="//www.sumokoin.org/user/themes/grayscale/img/favicon/apple-icon-76x76.png">
-	<link rel="apple-touch-icon" sizes="114x114" href="//www.sumokoin.org/user/themes/grayscale/img/favicon/apple-icon-114x114.png">
-	<link rel="apple-touch-icon" sizes="120x120" href="//www.sumokoin.org/user/themes/grayscale/img/favicon/apple-icon-120x120.png">
-	<link rel="apple-touch-icon" sizes="144x144" href="//www.sumokoin.org/user/themes/grayscale/img/favicon/apple-icon-144x144.png">
-	<link rel="apple-touch-icon" sizes="152x152" href="//www.sumokoin.org/user/themes/grayscale/img/favicon/apple-icon-152x152.png">
-	<link rel="apple-touch-icon" sizes="180x180" href="//www.sumokoin.org/user/themes/grayscale/img/favicon/apple-icon-180x180.png">
-	<link rel="icon" type="image/png" sizes="192x192"  href="//www.sumokoin.org/user/themes/grayscale/img/favicon/android-icon-192x192.png">
-	<link rel="icon" type="image/png" sizes="32x32" href="//www.sumokoin.org/user/themes/grayscale/img/favicon/favicon-32x32.png">
-	<link rel="icon" type="image/png" sizes="96x96" href="//www.sumokoin.org/user/themes/grayscale/img/favicon/favicon-96x96.png">
-	<link rel="icon" type="image/png" sizes="16x16" href="//www.sumokoin.org/user/themes/grayscale/img/favicon/favicon-16x16.png">
+	<link rel="apple-touch-icon" sizes="57x57" href="/static/favicon/apple-icon-57x57.png">
+	<link rel="apple-touch-icon" sizes="60x60" href="/static/favicon/apple-icon-60x60.png">
+	<link rel="apple-touch-icon" sizes="72x72" href="/static/favicon/apple-icon-72x72.png">
+	<link rel="apple-touch-icon" sizes="76x76" href="/static/favicon/apple-icon-76x76.png">
+	<link rel="apple-touch-icon" sizes="114x114" href="/static/favicon/apple-icon-114x114.png">
+	<link rel="apple-touch-icon" sizes="120x120" href="/static/favicon/apple-icon-120x120.png">
+	<link rel="apple-touch-icon" sizes="144x144" href="/static/favicon/apple-icon-144x144.png">
+	<link rel="apple-touch-icon" sizes="152x152" href="/static/favicon/apple-icon-152x152.png">
+	<link rel="apple-touch-icon" sizes="180x180" href="/static/favicon/apple-icon-180x180.png">
+	<link rel="icon" type="image/png" sizes="192x192"  href="/static/favicon/android-icon-192x192.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/static/favicon/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="96x96" href="/static/favicon/favicon-96x96.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/static/favicon/favicon-16x16.png">
+	<link rel="icon" type="image/x-icon" href="/static/favicon/favicon.ico">
+	<link rel="shortcut icon" type="image/x-icon" href="/static/favicon/favicon.ico">
+	<link rel="manifest" href="/static/favicon/manifest.json">
+	<meta name="msapplication-TileColor" content="#ffffff">
+	<meta name="msapplication-TileImage" content="/static/favicon/ms-icon-144x144.png">
+	<meta name="theme-color" content="#ffffff">
 	
-	 <script type="text/javascript">
-        $(function(){
-            $('.tx-input').click(function(){
-                $(this).next().next().toggle();
-            });
-        });
-    </script>
+    <script src="/static/jquery.min.js"></script>
+	<script src="/static/bootstrap.min.js"></script>
+	<script src="/static/sumokoin-explorer.js"></script>
+	
+	<link href="/static/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/font-awesome/css/font-awesome.min.css" rel="stylesheet">
+	<link href="/static/sumokoin-explorer.css" rel="stylesheet">
 </head>
 <body id="page-top" data-spy="scroll" data-target=".navbar-fixed-top">
 	
@@ -49,7 +50,8 @@
 					<i class="fa fa-bars"></i>
 				</button>
 				<a class="navbar-brand page-scroll" href="/">
-					<i class="fa fa-circle sumo-orange"></i> Sumokoin - Blockchain Explorer
+					<i class="fa fa-circle sumo-orange"></i> Sumokoin<br>
+					<span>Blockchain Explorer</span>
 				</a>
 			</div>
 			<div class="collapse navbar-collapse navbar-right navbar-main-collapse">
@@ -58,9 +60,9 @@
 					<li class="hidden">
 						<a href="#page-top"></a>
 					</li>
-					<li ><a class="page-scroll" href="/rawtx" >TX Pusher </a></li>
-					<li ><a class="page-scroll" href="/rawkeyimgs" >Key Images Checker </a></li>
-					<li ><a class="page-scroll" href="/rawoutputkeys" >Output Keys Checker </a></li>
+					<li ><a class="page-scroll" href="/rawtx">TX Pusher </a></li>
+					<li ><a class="page-scroll" href="/rawkeyimgs">Key Images Checker </a></li>
+					<li ><a class="page-scroll" href="/rawoutputkeys">Output Keys Checker </a></li>
 					<li class="external-menu-link"><a class="page-scroll" href="https://www.sumokoin.org" target="_blank">Sumokoin.org <i class="fa fa-external-link"></i></a></li>
 				</ul>
 			</div>
