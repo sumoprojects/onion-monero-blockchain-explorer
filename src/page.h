@@ -534,7 +534,7 @@ public:
         server_timestamp = std::time(nullptr);
 
         // number of last blocks to show
-        uint64_t no_of_last_blocks {25 + 1};
+        uint64_t no_of_last_blocks {60 + 1};
 
         // get the current blockchain height. Just to check
         uint64_t height =
