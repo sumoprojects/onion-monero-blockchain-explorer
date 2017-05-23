@@ -137,6 +137,34 @@ namespace xmreg
 
             return true;
         }
+        
+        uint64_t
+        get_coinbase_tx_sum()
+        {
+            epee::json_rpc::request<cryptonote::COMMAND_RPC_GET_COINBASE_TX_SUM::request> req_t = AUTO_VAL_INIT(req_t);
+            epee::json_rpc::response<cryptonote::COMMAND_RPC_GET_COINBASE_TX_SUM::response, std::string> resp_t = AUTO_VAL_INIT(resp_t);
+            
+            req_t.jsonrpc = "2.0";
+            req_t.method = "get_coinbase_tx_sum";
+            req_t.id = epee::serialization::storage_entry(0);
+            req_t.params.height = 0;
+            req_t.params.count = 1000000000;
+            
+            std::lock_guard<std::mutex> guard(m_daemon_rpc_mutex);
+
+            bool r = epee::net_utils::invoke_http_json_remote_command2(
+                    deamon_url + "/json_rpc",
+                    req_t, resp_t, m_http_client, 200000);
+
+            if (!r)
+            {
+                cerr << "Error connecting to Monero deamon at "
+                     << deamon_url << endl;
+                return 0;
+            }
+            
+            return resp_t.result.emission_amount;
+        }
 
     };
 

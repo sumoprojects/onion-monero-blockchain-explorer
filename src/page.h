@@ -319,6 +319,13 @@ public:
                  << endl;
         }
     }
+    
+    string
+    show_total_coins()
+    {
+        uint64_t emission_amount = rpc.get_coinbase_tx_sum();
+        return fmt::format("{:0.9f}", (emission_amount*1.0/1000000000));
+    }
 
 
     /**

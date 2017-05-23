@@ -216,6 +216,11 @@ int main(int ac, const char* av[]) {
 
         return xmrblocks.show_prove(tx_hash, xmr_address, tx_prv_key);
     });
+    
+    CROW_ROUTE(app, "/totalcoins").methods("GET"_method)
+    ([&](const crow::request& req) {
+        return xmrblocks.show_total_coins();
+    });
 	
 	 if (enable_pusher)
     {
