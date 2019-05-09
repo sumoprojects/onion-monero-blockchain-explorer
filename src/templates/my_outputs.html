@@ -10,7 +10,13 @@
     {{/has_payment_id}}
 
     {{#has_payment_id8}}
-        <H5 style="margin:5px">Payment id (encrypted): {{payment_id8}}</H5>
+        {{^decrypted_payment_id8}}
+            <H5 style="margin:5px">Payment id (encrypted): {{payment_id8}}</H5>
+        {{/decrypted_payment_id8}}
+        {{#decrypted_payment_id8}}
+            <H5 style="margin:5px">Payment id (decrypted): {{decrypted_payment_id8}}
+                (value incorrect if you are not the recipient of the tx)</H5>
+        {{/decrypted_payment_id8}}
     {{/has_payment_id8}}
 
 
@@ -71,6 +77,9 @@
                 0.000000000000
             {{/found_our_outputs}}
         </h3>
+        <h4>
+            <a href="{{shortcut_url}}" target="_blank">link to this page</a>
+        </h4>
 
     </div>
 
@@ -91,7 +100,7 @@
                             <table class="center">
                               <tr>
                                   <td style="text-align: center;">
-                                      Mixin {{mixin_pub_key}} might use your outputs
+                                      Ring member {{mixin_pub_key}} might use your outputs
                                       <br/>
                                       from tx of hash: <a href="/tx/{{mix_tx_hash}}">{{mix_tx_hash}}</a>
                                       <br/>(tx public key: {{mix_tx_pub_key}})
@@ -133,7 +142,7 @@
 
         </div>
         <h3>
-            Sum XMR from matched and marked by * mixin's outputs: {{sum_mixin_xmr}}
+            Sum XMR from matched and marked by * ring member's outputs: {{sum_mixin_xmr}}
             <br/>
             <span style="font-size: 16px"> Possible spending is:
                 {{possible_spending}} (tx fee included)
@@ -143,6 +152,12 @@
                 it is impossible to know whether this is your real spending. <br/>
                 So do not take this number seriously.
                 It is probably totally wrong anyway.</span>
+               <br/>
+               <span style="font-size: 14px">
+                 Number of possible our mixins is {{no_all_possible_mixins}}
+                      for {{all_possible_mixins_amount}} xmr
+                      (amount as uint64).
+               </span>
         </h3>
     </div>
 

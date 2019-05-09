@@ -8,30 +8,30 @@
 #define PATH_SEPARARTOR '/'
 
 #define XMR_AMOUNT(value) \
-    static_cast<double>(value) / 1e12
+    static_cast<double>(value) / 1e9
 
 #define REMOVE_HASH_BRAKETS(a_hash) \
     a_hash.substr(1, a_hash.size()-2)
 
+
+
 #include "monero_headers.h"
 
-#include "../ext/infix_iterator.h"
-#include "../ext/date/tz.h"
-#include "../ext/format.h"
+#include "../ext/fmt/ostream.h"
+#include "../ext/fmt/format.h"
 #include "../ext/json.hpp"
-#include "../ext/member_checker.h"
 
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/optional.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-
+#include <boost/algorithm/string.hpp>
 
 #include <string>
 #include <vector>
-#include <array>
 #include <iterator>
 #include <algorithm>
+#include <type_traits>
+#include <regex>
 
 /**
  * Some helper functions used in the example.
@@ -46,9 +46,6 @@ using namespace crypto;
 using namespace std;
 
 namespace bf = boost::filesystem;
-namespace pt = boost::posix_time;
-namespace gt = boost::gregorian;
-namespace lt = boost::local_time;
 
 using json = nlohmann::json;
 
@@ -75,23 +72,43 @@ template <typename T>
 bool
 parse_str_secret_key(const string& key_str, T& secret_key);
 
+template <typename T>
+bool
+parse_str_secret_key(const string& key_str, std::vector<T>& secret_keys)
+{
+    const size_t num_keys = key_str.size() / 64;
+
+    if (num_keys * 64 != key_str.size())
+        return false;
+
+    secret_keys.resize(num_keys);
+
+    for (size_t i = 0; i < num_keys; ++i)
+    {
+        if (!parse_str_secret_key(key_str.substr(64*i, 64), secret_keys[i]))
+            return false;
+    }
+
+    return true;
+}
+
 
 bool
 get_tx_pub_key_from_str_hash(Blockchain& core_storage,
-                         const string& hash_str,
-                         transaction& tx);
+                             const string& hash_str,
+                             transaction& tx);
 
 bool
 parse_str_address(const string& address_str,
-                  account_public_address& address,
-                  bool testnet = false);
+                  address_parse_info& address_info,
+                  cryptonote::network_type nettype = cryptonote::network_type::MAINNET);
 
 inline bool
 is_separator(char c);
 
 string
-print_address(const account_public_address& address,
-              bool testnet = false);
+print_address(const address_parse_info& address,
+              cryptonote::network_type nettype = cryptonote::network_type::MAINNET);
 
 string
 print_sig (const signature& sig);
@@ -103,17 +120,14 @@ bf::path
 remove_trailing_path_separator(const bf::path& in_path);
 
 string
-timestamp_to_str(time_t timestamp, const char* format = "%F %T");
-
-string
-timestamp_to_str_local(time_t timestamp, const char* format = "%F %T");
+timestamp_to_str_gm(time_t timestamp, const char* format = "%F %T");
 
 ostream&
-operator<< (ostream& os, const account_public_address& addr);
+operator<< (ostream& os, const address_parse_info& addr_info);
 
 
 string
-get_default_lmdb_folder(bool testnet = false);
+get_default_lmdb_folder(cryptonote::network_type nettype = cryptonote::network_type::MAINNET);
 
 bool
 generate_key_image(const crypto::key_derivation& derivation,
@@ -125,7 +139,7 @@ generate_key_image(const crypto::key_derivation& derivation,
 bool
 get_blockchain_path(const boost::optional<string>& bc_path,
                     bf::path& blockchain_path,
-                    bool testnet = false);
+                    cryptonote::network_type nettype = cryptonote::network_type::MAINNET);
 
 uint64_t
 sum_money_in_outputs(const transaction& tx);
@@ -133,17 +147,37 @@ sum_money_in_outputs(const transaction& tx);
 pair<uint64_t, uint64_t>
 sum_money_in_outputs(const string& json_str);
 
+pair<uint64_t, uint64_t>
+sum_money_in_outputs(const json& _json);
+
+
+array<uint64_t, 4>
+summary_of_in_out_rct(
+        const transaction& tx,
+        vector<pair<txout_to_key, uint64_t>>& output_pub_keys,
+        vector<txin_to_key>& input_key_imgs);
+
+// this version for mempool txs from json
+array<uint64_t, 6>
+summary_of_in_out_rct(const json& _json);
+
 uint64_t
 sum_money_in_inputs(const transaction& tx);
 
 pair<uint64_t, uint64_t>
 sum_money_in_inputs(const string& json_str);
 
+pair<uint64_t, uint64_t>
+sum_money_in_inputs(const json& _json);
+
 uint64_t
 count_nonrct_inputs(const transaction& tx);
 
 uint64_t
 count_nonrct_inputs(const string& json_str);
+
+uint64_t
+count_nonrct_inputs(const json& _json);
 
 array<uint64_t, 2>
 sum_money_in_tx(const transaction& tx);
@@ -159,6 +193,9 @@ get_mixin_no(const transaction& tx);
 
 vector<uint64_t>
 get_mixin_no(const string& json_str);
+
+vector<uint64_t>
+get_mixin_no(const json& _json);
 
 vector<uint64_t>
 get_mixin_no_in_txs(const vector<transaction>& txs);
@@ -187,7 +224,7 @@ get_payment_id(const transaction& tx,
 inline double
 get_xmr(uint64_t core_amount)
 {
-    return  static_cast<double>(core_amount) / 1e12;
+    return  static_cast<double>(core_amount) / 1e9;
 }
 
 array<size_t, 5>
@@ -197,34 +234,22 @@ string
 read(string filename);
 
 
-
-/**
- * prints an iterable such as vector
- */
-template<typename T>
-void print_iterable(const T & elems) {
-
-    infix_ostream_iterator<typename T::value_type>
-            oiter(std::cout, ",");
-
-    std::cout << "[";
-    std::copy(elems.begin(), elems.end(),oiter);
-    std::cout << "]" << std::endl;
-}
-
 pair<string, double>
 timestamps_time_scale(const vector<uint64_t>& timestamps,
-                  uint64_t timeN, uint64_t resolution = 80,
-                  uint64_t time0 = 1397818193 /* timestamp of the second block */);
-
-
-time_t
-ptime_to_time_t(const pt::ptime& in_ptime);
+                      uint64_t timeN, uint64_t resolution = 80,
+                      uint64_t time0 = 1397818193 /* timestamp of the second block */);
 
 bool
 decode_ringct(const rct::rctSig & rv,
               const crypto::public_key pub,
               const crypto::secret_key &sec,
+              unsigned int i,
+              rct::key & mask,
+              uint64_t & amount);
+
+bool
+decode_ringct(const rct::rctSig & rv,
+              const crypto::key_derivation &derivation,
               unsigned int i,
               rct::key & mask,
               uint64_t & amount);
@@ -245,9 +270,6 @@ decrypt(const std::string &ciphertext,
 // crypto::public_key wallet2::get_tx_pub_key_from_received_outs(const tools::wallet2::transfer_details &td) const
 public_key
 get_tx_pub_key_from_received_outs(const transaction &tx);
-
-date::sys_seconds
-parse(const std::string& str, string format="%Y-%m-%d %H:%M:%S");
 
 static
 string
@@ -309,6 +331,18 @@ void chunks(Iterator begin,
     }
     while(std::distance(chunk_begin,end) > 0);
 }
+    
+/*
+ * Remove all characters in in_str that match the given
+ * regular expression
+ */
+template <typename T>
+inline string
+remove_bad_chars(T&& in_str, std::regex const& rgx = std::regex ("[^a-zA-Z0-9+/=]"))
+{
+    return std::regex_replace(std::forward<T>(in_str), rgx, "");
+}
+
 
 bool
 make_tx_from_json(const string& json_str, transaction& tx);
@@ -332,6 +366,12 @@ calc_median(It it_begin, It it_end)
     return data[data.size() / 2];
 }
 
+
+void
+pause_execution(uint64_t no_seconds, const string& text = "now");
+
+string
+tx_to_hex(transaction const& tx);
 
 }
 
